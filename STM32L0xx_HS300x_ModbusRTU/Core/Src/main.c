@@ -72,6 +72,7 @@ static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void ModbusRTU_Slave(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -132,9 +133,9 @@ int main(void)
 		{
 			HS300X_Start_Measurement(&hi2c1, (int16_t*)&Tem, (int16_t*)&Humi);
 			//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-			sprintf(Tem_Humi,"Tem:%d Humi:%d",Tem, Humi);
-			HAL_UART_Transmit(&huart2, (uint8_t *)Tem_Humi, (uint16_t)strlen(Tem_Humi), 1000);
-			HAL_UART_Transmit(&huart2,(uint8_t *)"\r",(uint16_t)strlen("\r"),1000);
+			//sprintf(Tem_Humi,"Tem:%d Humi:%d",Tem, Humi);
+			//HAL_UART_Transmit(&huart2, (uint8_t *)Tem_Humi, (uint16_t)strlen(Tem_Humi), 1000);
+			//HAL_UART_Transmit(&huart2,(uint8_t *)"\r",(uint16_t)strlen("\r"),1000);
 			aTemperature[0] = Tem >> 8;
 			aTemperature[1]= (Tem << 8) >> 8;
 			aHumidity[0]=0x00;
@@ -143,46 +144,7 @@ int main(void)
 			check_getTick_sendData = HAL_GetTick();
 		}
 		
-		if(Check_CountBuffer_Complete_Uart(&sUart2)==1)
-		{
-			if(sUart2.sim_rx[0] == ADDR_STM32L0XX)
-			{
-				uint8_t Frame[10];
-				sData sFrame;
-				sFrame.Data_a8 = Frame;
-				uint16_t CRC_rx = sUart2.sim_rx[sUart2.countBuffer-1] << 8 | sUart2.sim_rx[sUart2.countBuffer-2];
-				uint16_t CRC_check = ModRTU_CRC(&sUart2.sim_rx[0], sUart2.countBuffer-2);
-				uint8_t FunCode=sUart2.sim_rx[1];
-				if(CRC_check == CRC_rx)
-				{
-					if(FunCode == 03)
-					{
-						uint16_t addr_data = sUart2.sim_rx[2] << 8 | sUart2.sim_rx[3];
-						switch (addr_data)
-						{
-							case ADDR_TEMPERATURE:
-								ModRTU_Slave_ACK_Read_Frame(&sFrame, ADDR_STM32L0XX, FunCode, addr_data, 0x02, aTemperature);
-								break;
-
-							case ADDR_HUMIDITY:
-								ModRTU_Slave_ACK_Read_Frame(&sFrame, ADDR_STM32L0XX, FunCode, addr_data, 0x02, aHumidity);
-								break;
-							
-							default:
-								Response_Error_CRC(&sFrame, ADDR_STM32L0XX, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS);
-						}
-						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-						HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
-						HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-					}
-				}
-				else
-				{
-					Response_Error_CRC(&sFrame, ADDR_STM32L0XX, (uint16_t) (0x80 + FunCode), ERROR_CODE_INSTRUCTION);
-				}
-			}
-			Delete_Buffer(&sUart2);
-		}
+		ModbusRTU_Slave();
   }
   /* USER CODE END 3 */
 }
@@ -347,6 +309,50 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void ModbusRTU_Slave(void)
+{
+	if(Check_CountBuffer_Complete_Uart(&sUart2)==1)
+	{
+		if(sUart2.sim_rx[0] == ADDR_STM32L0XX)
+		{
+			uint8_t Frame[10];
+			sData sFrame;
+			sFrame.Data_a8 = Frame;
+			uint16_t CRC_rx = sUart2.sim_rx[sUart2.countBuffer-1] << 8 | sUart2.sim_rx[sUart2.countBuffer-2];
+			uint16_t CRC_check = ModRTU_CRC(&sUart2.sim_rx[0], sUart2.countBuffer-2);
+			uint8_t FunCode=sUart2.sim_rx[1];
+			if(CRC_check == CRC_rx)
+			{
+				if(FunCode == 03)
+				{
+					uint16_t addr_data = sUart2.sim_rx[2] << 8 | sUart2.sim_rx[3];
+					switch (addr_data)
+					{
+						case ADDR_TEMPERATURE:
+							ModRTU_Slave_ACK_Read_Frame(&sFrame, ADDR_STM32L0XX, FunCode, addr_data, 0x02, aTemperature);
+							break;
+
+						case ADDR_HUMIDITY:
+							ModRTU_Slave_ACK_Read_Frame(&sFrame, ADDR_STM32L0XX, FunCode, addr_data, 0x02, aHumidity);
+							break;
+						
+						default:
+							Response_Error_CRC(&sFrame, ADDR_STM32L0XX, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS);
+					}
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+					HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
+					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+				}
+			}
+			else
+			{
+				Response_Error_CRC(&sFrame, ADDR_STM32L0XX, (uint16_t) (0x80 + FunCode), ERROR_CODE_INSTRUCTION);
+			}
+		}
+		Delete_Buffer(&sUart2);
+	}
+}
+
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   /* Prevent unused argument(s) compilation warning */
