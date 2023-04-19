@@ -4,12 +4,14 @@
 #include "stm32l0xx_hal.h"
 #include "string.h"
 
+#define COMPLETE_RECEIVE_UART_TIME_MS 9
+
 typedef struct
 {
 	UART_HandleTypeDef* huart;
 	uint8_t buffer;
 	uint16_t countBuffer;
-	uint8_t sim_rx[10];
+	uint8_t sim_rx[20];
 }UART_BUFFER;
 
 int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart);

@@ -22,6 +22,7 @@
                 Master: 2 byte dia chi du lieu  - 2 byte do dài du lieu - n byte du lieu can ghi     
                 Slave: 2 byte dia chi du lieu - 2 byte do dài du lieu  
     + Byte CRC: 2 byte kiem tra loi cua hàm truyen. cách tính giá tri cua Byte CRC 16 Bit
+    refer protocl: https://www.modbustools.com/modbus.html
 */
 
 #include "user_modbus_rtu.h"
@@ -32,7 +33,6 @@
 // Compute the MODBUS RTU CRC
 uint16_t ModRTU_CRC(uint8_t* buf, int len)
 {
-
   uint16_t crc = 0xFFFF;
   
   for (int pos = 0; pos < len; pos++) 
@@ -77,22 +77,30 @@ void ModRTU_Convert_Special_Byte (uint8_t* Buff_Source, uint16_t* length)
 }
 
 /*======================== Funcion Master ======================*/
-void ModRTU_Master_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, uint16_t Add_Data, uint16_t LengthData)
+
+/*
+    Func: Modbus Read: 0x03
+        + FunC code: 1 byte 0x03
+        + AddrSlave: 1 byte ID slave addr
+        + Addr Regis: 2 byte: HI first
+        + LengthRegis: Num Regis want to read
+*/
+uint8_t ModRTU_Master_Read_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t FunCode, uint16_t AddrRegis, uint16_t LengthRegis)
 {
     uint16_t crc;
     uint16_t Count = 0;
     
     // Ðong goi frame
     //1 byte Add Slave
-    pFrame->Data_a8[Count++] = Address;
+    pFrame->Data_a8[Count++] = AddrSlave;
     //1 byte Funcode
     pFrame->Data_a8[Count++] = FunCode;
     //2 byte Add Data
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data & 0xFF);
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis>>8) & 0xFF;
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis & 0xFF);
     //2 byte Data length
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData & 0xFF);
+    pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis>>8) & 0xFF;
+    pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis & 0xFF);
     //Tinh 2 byte Crc
     crc = ModRTU_CRC(&pFrame->Data_a8[0], Count); 
     //them 2 byte crc
@@ -100,6 +108,8 @@ void ModRTU_Master_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, 
     pFrame->Data_a8[Count++] = (uint8_t) (crc>>8) & 0xFF;
     
     pFrame->Length_u16 = Count;
+    
+    return 1;
 }
 
 
@@ -124,7 +134,16 @@ uint8_t ModRTU_Master_Read (void)
 }
 */
 
-void ModRTU_Master_Write_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, uint16_t Add_Data, uint16_t LengthData, uint8_t* aData)
+/*
+    Func: Modbus write: 0x06: sigle res, 0x10: multi Res
+        + FunC code: 1 byte 0x06 | 0x10
+        + AddrSlave: 1 byte ID slave addr
+        + Addr Regis: 2 byte: HI first
+        + LengthRegis: Num Regis want to read ( 0x06: Only 1) (0x10 num regis)
+        + aData: Data to write (length data = Numregis * 2)
+*/
+
+uint8_t ModRTU_Master_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t FunCode, uint16_t AddrRegis, uint16_t LengthRegis, uint8_t *aData)
 {
     uint16_t crc;
     uint16_t Count = 0;
@@ -132,17 +151,36 @@ void ModRTU_Master_Write_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode,
     
     // Ðong goi frame
     //1 byte Add Slave
-    pFrame->Data_a8[Count++] = Address;
+    pFrame->Data_a8[Count++] = AddrSlave;
     //1 byte Funcode
     pFrame->Data_a8[Count++] = FunCode;
+    
     //2 byte Add Data
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data & 0xFF);
-    //2 byte Data length
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData & 0xFF);
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis>>8) & 0xFF;
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis & 0xFF);
+    
+    switch (FunCode)
+    {
+        case 0x06:  //write sigle regis
+            if (LengthRegis != 1)
+            {
+                return 0;
+            }
+            break;
+        case 0x10: 
+            //2 byte Data length
+            pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis>>8) & 0xFF;
+            pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis & 0xFF);
+            //1 byte coubt
+            pFrame->Data_a8[Count++] = LengthRegis * 2;
+            
+            break;
+        default:
+            break;
+    }
+    
     //n byte data
-    for(i = 0; i < LengthData; i++)
+    for(i = 0; i < (LengthRegis * 2); i++)
         pFrame->Data_a8[Count++] = *(aData + i);
     //Tinh 2 byte Crc
     crc = ModRTU_CRC(&pFrame->Data_a8[0], Count); 
@@ -151,11 +189,23 @@ void ModRTU_Master_Write_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode,
     pFrame->Data_a8[Count++] = (uint8_t) (crc>>8) & 0xFF;
     
     pFrame->Length_u16 = Count;
+    
+    return 1;
 }
 
 
+
 /*======================== Funcion Slave ======================*/
-void ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, uint16_t Add_Data, uint16_t LengthData, uint8_t* aData)
+/*
+    Func: Modbus write: 0x06: sigle res, 0x10: multi Res
+        + FunC code: 1 byte 0x06 | 0x10
+        + AddrSlave: 1 byte ID slave addr
+        + Addr Regis: 2 byte: HI first
+        + LengthRegis: Num Regis want to read ( 0x06: Only 1) (0x10 num regis)
+        + aData: Data to write (length data = Numregis * 2)
+*/
+
+uint8_t ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t FunCode, uint16_t AddrRegis, uint16_t LengthRegis, uint8_t *aData)
 {
     uint16_t crc;
     uint16_t Count = 0;
@@ -163,18 +213,15 @@ void ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCod
     
     // Ðong goi frame
     //1 byte Add Slave
-    pFrame->Data_a8[Count++] = Address;
+    pFrame->Data_a8[Count++] = AddrSlave;
     //1 byte Funcode
     pFrame->Data_a8[Count++] = FunCode;
-    //2 byte Add Data
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data & 0xFF);
-    //2 byte Data length
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData & 0xFF);
+    //1byte byte count
+    pFrame->Data_a8[Count++] = LengthRegis * 2;
     //n byte data
-    for(i = 0; i < LengthData; i++)
-    pFrame->Data_a8[Count++] = *(aData + i);
+    for(i = 0; i < (LengthRegis * 2); i++)
+        pFrame->Data_a8[Count++] = *(aData + i);
+    
     //Tinh 2 byte Crc
     crc = ModRTU_CRC(&pFrame->Data_a8[0],Count); 
     //them 2 byte crc
@@ -182,25 +229,48 @@ void ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCod
     pFrame->Data_a8[Count++] = (uint8_t) (crc>>8) & 0xFF;
     
     pFrame->Length_u16 = Count;
+    
+    return 1;
 }
 
 
-void ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, uint16_t Add_Data, uint16_t LengthData)
+uint8_t ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t FunCode, uint16_t AddrRegis, uint16_t LengthRegis, uint8_t *pData)
 {
     uint16_t crc;
-    uint16_t Count = 0;
+    uint16_t Count = 0, i = 0;
 
     // Ðong goi frame
     //1 byte Add Slave
-    pFrame->Data_a8[Count++] = Address;
+    pFrame->Data_a8[Count++] = AddrSlave;
     //1 byte Funcode
     pFrame->Data_a8[Count++] = FunCode;
     //2 byte Add Data
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (Add_Data & 0xFF);
-    //2 byte Data length
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData>>8) & 0xFF;
-    pFrame->Data_a8[Count++] = (uint8_t) (LengthData & 0xFF);
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis>>8) & 0xFF;
+    pFrame->Data_a8[Count++] = (uint8_t) (AddrRegis & 0xFF);
+    
+    switch (FunCode)
+    {
+        case 0x06:  //write sigle regis
+            if (LengthRegis != 1)
+            {
+                return 0;
+            }
+            //n byte data
+            for(i = 0; i < (LengthRegis * 2); i++)
+                pFrame->Data_a8[Count++] = *(pData + i);
+            break;
+        case 0x10: 
+            //2 byte Data length
+            pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis>>8) & 0xFF;
+            pFrame->Data_a8[Count++] = (uint8_t) (LengthRegis & 0xFF);
+            //1 byte coubt
+            pFrame->Data_a8[Count++] = LengthRegis * 2;
+            
+            break;
+        default:
+            break;
+    }
+    
     //Tinh 2 byte Crc
     crc = ModRTU_CRC(&pFrame->Data_a8[0],Count); 
     //them 2 byte crc
@@ -208,6 +278,8 @@ void ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t Address, uint8_t FunCo
     pFrame->Data_a8[Count++] = (uint8_t) (crc>>8) & 0xFF;
 
     pFrame->Length_u16 = Count;
+    
+    return 1;
 }
 
 void Response_Error_CRC(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code)

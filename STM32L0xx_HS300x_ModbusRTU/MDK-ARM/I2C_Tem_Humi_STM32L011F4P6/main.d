@@ -30,7 +30,6 @@ i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr_ex.h
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h
-i2c_tem_humi_stm32l011f4p6\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/Mylib/Inc/HS300x.h
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/Mylib/Inc/user_modbus_rtu.h
 i2c_tem_humi_stm32l011f4p6\main.o: ../Drivers/Mylib/Inc/user_uart.h
