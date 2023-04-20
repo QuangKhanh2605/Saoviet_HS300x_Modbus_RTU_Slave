@@ -100,6 +100,7 @@ void HAL_SYSTICK_Callback(void);
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length);
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2);
 uint32_t FLASH_ReadData32(uint32_t addr);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -140,13 +141,13 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
-//	for(int i=1;i<128;i++)
-//	{
-//		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
-//		{
-//			address=i;
-//		}
-//	}
+	for(int i=1;i<128;i++)
+	{
+		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
+		{
+			address=i;
+		}
+	}
 	check_flash=FLASH_ReadData32(FLASH_startPage_data);
 	if(check_flash > 0)
 	{
@@ -165,7 +166,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		if(GetTick_Ms > HAL_GetTick()) GetTick_Ms=0;
-		if(HAL_GetTick() - GetTick_Ms > TIME_SAMPLING) 
+		if(HAL_GetTick() - GetTick_Ms > 1000) 
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&Tem, (int16_t*)&Humi)==1)
 			{
@@ -295,7 +296,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = baud_rate;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -546,7 +547,6 @@ uint32_t FLASH_ReadData32(uint32_t addr)
 	uint32_t data = *(__IO uint32_t *)(addr);
 	return data;
 }
-
 /* USER CODE END 4 */
 
 /**
