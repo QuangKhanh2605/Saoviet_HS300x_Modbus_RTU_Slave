@@ -9,8 +9,8 @@ typedef struct
 	uint8_t  *Data_a8;
 	uint16_t Length_u16;
 }sData;
-#define ERROR_CODE_INSTRUCTION      0x01
-#define ERROR_CODE_ADDRESS          0x02
+#define ERROR_CODE_ADDRESS_OR_QUANTITY      0x01
+#define ERROR_CODE_FUNCTION_CODE            0x02
 
 /*======================== Define ======================*/
 

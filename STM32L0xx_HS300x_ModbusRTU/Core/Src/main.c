@@ -96,6 +96,7 @@ static void MX_USART2_UART_Init(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void ModbusRTU_Slave(void);
 void Change_Baudrate_AddrSlave(void);
+void Transmit_Frame(sData sFrame);
 void HAL_SYSTICK_Callback(void);
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length);
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2);
@@ -364,18 +365,16 @@ void ModbusRTU_Slave(void)
 				uint8_t data_frame[20];
 				if(FunCode == 0x03)
 				{
-					if(addr_data <= 0x07 && length_register > 1)
+					if(addr_data <= 0x07 && length_register >= 1)
 					{
 						Packing_Frame(data_frame, addr_data, length_register);
-						ModRTU_Slave_ACK_Read_Frame(&sFrame,addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
+						ModRTU_Slave_ACK_Read_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
 					}
 					else
 					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS);
+						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-					HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
-					HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+					Transmit_Frame(sFrame);
 				}
 				if(FunCode == 0x06)
 				{
@@ -384,13 +383,13 @@ void ModbusRTU_Slave(void)
 						data_frame[i]= sUart2.sim_rx[4+i];
 					}
 					
-					if(addr_data == 0x0000)
+					if(addr_data == 0x0000 && length_register >= 1)
 					{
 						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
 						FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
 					}
 					
-					if(addr_data == 0x0001)
+					if(addr_data == 0x0001 && length_register >= 1)
 					{
 						uint16_t tmp_baud_rate = data_frame[0] << 8 | data_frame[1];
 						baud_rate = baud_rate_value[tmp_baud_rate];
@@ -399,9 +398,9 @@ void ModbusRTU_Slave(void)
 						FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
 					}
 					
-					if(addr_data > 0x0001)
+					if(addr_data > 0x0001 || length_register < 1)
 					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS);
+						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 					else
 					{
@@ -411,7 +410,7 @@ void ModbusRTU_Slave(void)
 			}
 			else
 			{
-				Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_INSTRUCTION);
+				Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_FUNCTION_CODE);
 			}
 		}
 		Delete_Buffer(&sUart2);
@@ -524,6 +523,13 @@ void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length
 		i++;
 	}
 
+}
+
+void Transmit_Frame(sData sFrame)
+{
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 }
 
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2)
