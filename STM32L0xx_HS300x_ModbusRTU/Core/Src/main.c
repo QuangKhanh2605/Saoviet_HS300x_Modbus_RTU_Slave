@@ -364,7 +364,7 @@ void ModbusRTU_Slave(void)
 				uint8_t data_frame[20];
 				if(FunCode == 0x03)
 				{
-					if(addr_data <= 6 && length_register >= 2)
+					if(addr_data <= 0x07 && length_register > 1)
 					{
 						Packing_Frame(data_frame, addr_data, length_register);
 						ModRTU_Slave_ACK_Read_Frame(&sFrame,addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
