@@ -293,6 +293,8 @@ void Response_Error_CRC(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t
   pFrame->Data_a8[Count++] = FunCode;
 	//1 byte Error Code
   pFrame->Data_a8[Count++] = Error_Code;
+	
+	pFrame->Length_u16 = Count;
 }
 
 

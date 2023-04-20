@@ -36,6 +36,7 @@ Add "HAL_SYSTICK_IRQHandler();" To "Systick_Handler" In "stm32L1xx_it.c"
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 #define NUMBER_OF_REGISTER 8
+#define TIME_SAMPLING      500
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -55,7 +56,6 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
-uint32_t Time_Sampling = 1000;
 int16_t Tem=0xFF;
 int16_t Humi=0xFF;
 
@@ -96,7 +96,6 @@ static void MX_USART2_UART_Init(void);
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void ModbusRTU_Slave(void);
 void Change_Baudrate_AddrSlave(void);
-void Transmit_Frame(sData sFrame);
 void HAL_SYSTICK_Callback(void);
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length);
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2);
@@ -166,7 +165,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		if(GetTick_Ms > HAL_GetTick()) GetTick_Ms=0;
-		if(HAL_GetTick() - GetTick_Ms > Time_Sampling) 
+		if(HAL_GetTick() - GetTick_Ms > TIME_SAMPLING) 
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&Tem, (int16_t*)&Humi)==1)
 			{
@@ -374,9 +373,8 @@ void ModbusRTU_Slave(void)
 					{
 						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
-					Transmit_Frame(sFrame);
 				}
-				if(FunCode == 0x06)
+				else if(FunCode == 0x06)
 				{
 					for(uint8_t i=0;i<2;i++)
 					{
@@ -398,20 +396,27 @@ void ModbusRTU_Slave(void)
 						FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
 					}
 					
-					if(addr_data > 0x0001 || length_register < 1)
-					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
-					}
-					else
+					if(addr_data <= 0x0001 && length_register >= 1)
 					{
 						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
 					}
+					else
+					{
+						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+					}
+				}
+				else
+				{
+					Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_FUNCTION_CODE);
 				}
 			}
 			else
 			{
-				Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_FUNCTION_CODE);
+				Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_CHECK_CRC);
 			}
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+			HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 		}
 		Delete_Buffer(&sUart2);
 	}
@@ -443,9 +448,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
    */
 }
 
-void HAL_SYSTICK_Callback(void)
-{
-}
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length)
 {
 	uint8_t i=0;
@@ -522,14 +524,6 @@ void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length
 		data_frame[i]=0x00;
 		i++;
 	}
-
-}
-
-void Transmit_Frame(sData sFrame)
-{
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-	HAL_UART_Transmit(&huart2, sFrame.Data_a8, sFrame.Length_u16, 1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 }
 
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2)
@@ -543,7 +537,7 @@ void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2)
 	HAL_FLASHEx_Erase(&EraseInit, &PageError);
 	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data , check);
 	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 4, data1); //4 byte dau tien
-	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 8, data2); // 4byte tiep theo
+	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 8, data2); //4 byte tiep theo
   HAL_FLASH_Lock();
 }
 
