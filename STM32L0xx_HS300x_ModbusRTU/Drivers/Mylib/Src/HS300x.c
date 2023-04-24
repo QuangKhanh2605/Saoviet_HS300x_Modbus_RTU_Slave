@@ -22,8 +22,8 @@ uint8_t Number_Error_HS300X_u8 = 0;
 /*******************************************************************************
  * Code
  ******************************************************************************/
-
-
+float dividsion = 16383.00;
+ 
 /* USER CODE BEGIN 2 */
 /* This function call after 10ms HS300x resart */
 uint8_t HS300X_Init(I2C_HandleTypeDef *hi2c_x, TEMP_RESO Temperature_Resolution_x_bit, TEMP_HUMID Humidity_Resolution_x_bit)
@@ -106,7 +106,7 @@ uint8_t HS300X_Start_Measurement(I2C_HandleTypeDef *hi2c_x, int16_t *temperature
 {
     uint8_t reVal = 0;
     uint8_t receive_data[4] = {0x00, 0x00, 0x00, 0x00};
-    uint16_t temp_x,humi_x;
+		uint16_t temp_x,humi_x;
 
     if (HAL_OK == HAL_I2C_Master_Transmit(hi2c_x, HS300X_SENSON_ADDR << 1, &receive_data[0], 0, 100))
     {
@@ -127,8 +127,8 @@ uint8_t HS300X_Start_Measurement(I2C_HandleTypeDef *hi2c_x, int16_t *temperature
             temp_x = ((receive_data[2] << 8) | receive_data[3]);
             humi_x = humi_x & 0x3FFFU;
             temp_x = ((temp_x >> 2) & 0xFFFFU);
-            *humidity = (int16_t)((humi_x / 16383.00) * 100.00);
-            *temperature = (int16_t)((((temp_x / 16383.00) * 165.00) - 40.00) * 100);
+            *humidity = (int16_t)((humi_x / dividsion) * 100);
+            *temperature = (int16_t)((((temp_x / dividsion) * 165) - 40) * 100);
             if (Number_Error_HS300X_u8 != 0)
             {
                 Number_Error_HS300X_u8 = 0;

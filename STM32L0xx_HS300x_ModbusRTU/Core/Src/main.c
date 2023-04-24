@@ -18,7 +18,7 @@
 	
 /*
 
-Add "HAL_SYSTICK_IRQHandler();" To "Systick_Handler" In "stm32L1xx_it.c"
+Change "baud_rate;" To "MX_USART2_UART_Init();" 
 
 */
 /* USER CODE END Header */
@@ -71,7 +71,7 @@ UART_BUFFER sUart2;
 uint8_t check_flash=0;
 uint32_t FLASH_startPage_data = 0x08000000 + 1024*15;
 uint32_t baud_rate      = 115200;
-uint32_t addr_stm32l0xx = 0X1A;
+uint8_t addr_stm32l0xx = 0x1A;
 
 uint16_t addr_baud_rate        = 0x01;
 
@@ -85,6 +85,7 @@ uint16_t addr_humi_decimal     = 0x07;
 
 uint32_t baud_rate_value[8]={1200,2400,4800,9600,19200,38400,57600,115200};
 uint8_t calib_sensor[5]={0,0,0,0,0};
+char success[]="SUCCESS";
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,7 +101,8 @@ void HAL_SYSTICK_Callback(void);
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length);
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2);
 uint32_t FLASH_ReadData32(uint32_t addr);
-
+uint8_t Terminal_Receive(void);
+void send_success(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -115,6 +117,9 @@ uint32_t FLASH_ReadData32(uint32_t addr);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+
+
 
 	sUart2.huart = &huart2;
   /* USER CODE END 1 */
@@ -166,7 +171,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		if(GetTick_Ms > HAL_GetTick()) GetTick_Ms=0;
-		if(HAL_GetTick() - GetTick_Ms > 1000) 
+		if(HAL_GetTick() - GetTick_Ms > TIME_SAMPLING) 
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&Tem, (int16_t*)&Humi)==1)
 			{
@@ -296,7 +301,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = baud_rate;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -424,14 +429,128 @@ void ModbusRTU_Slave(void)
 }
 void Change_Baudrate_AddrSlave(void)
 {
-	if(sUart2.sim_rx[0] == 'A' && sUart2.sim_rx[1] == 'T' && sUart2.sim_rx[2] == '+' && sUart2.sim_rx[3] == 'R' && sUart2.sim_rx[5] == 'S' && sUart2.sim_rx[7] == 'T')
+	uint8_t receive_ctrl=0;
+	receive_ctrl=Terminal_Receive();
+	if(receive_ctrl == 1)
 	{
 		addr_stm32l0xx = 0x1A;
 		baud_rate=115200;
+		send_success();
+		
 		MX_USART2_UART_Init();
 		HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
 		FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
 	}
+	
+	if(receive_ctrl == 2)
+	{
+		uint8_t i=0;
+		uint8_t count=0;
+		while(sUart2.sim_rx[i] != '=')
+		{
+			i++;
+		}
+		i++;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		while( sUart2.sim_rx[i] >= '0' && sUart2.sim_rx[i] <= '9' && i<sUart2.countBuffer)
+		{
+			i++;
+			count++;
+		}
+		i--;
+		if(count >0 && count <=3)
+		{
+			uint8_t tmp=0;
+			if(count == 1) tmp = (sUart2.sim_rx[i] -48);
+			if(count == 2) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 ;
+			if(count == 3) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 + (sUart2.sim_rx[i-2] -48)*100;
+			if(tmp > 0 && tmp <= 255)
+			{
+				addr_stm32l0xx = tmp;
+				send_success();
+				FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+			}
+		}
+	}
+	
+	if(receive_ctrl == 3)
+	{
+		uint8_t i=0;
+		while(sUart2.sim_rx[i] != '=')
+		{
+			i++;
+		}
+		i++;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		if(sUart2.sim_rx[i] >= '0' && sUart2.sim_rx[i] <= '7' && i<sUart2.countBuffer)
+		{
+			uint8_t tmp = sUart2.sim_rx[i] - 48;
+			baud_rate=baud_rate_value[tmp];
+			send_success();
+			
+			MX_USART2_UART_Init();
+			HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
+			FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+		}
+	}
+}
+
+void send_success(void)
+{
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(&huart2,(uint8_t *)success,(uint16_t)strlen(success),1000);
+	HAL_UART_Transmit(&huart2,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+}
+
+uint8_t Terminal_Receive(void)
+{
+	uint16_t i=0;
+	while(sUart2.sim_rx[i] == ' ' )
+	{
+		i++;
+	}
+	if(sUart2.sim_rx[i] == 'A' && sUart2.sim_rx[i+1] == 'T') i=i+2;
+	else return 0;
+	
+	while(sUart2.sim_rx[i] == ' ')
+	{
+		i++;
+	}
+	if(sUart2.sim_rx[i] == '+') i++;
+	else return 0;
+	
+	while(sUart2.sim_rx[i] == ' ')
+	{
+		i++;
+	}
+	if(sUart2.sim_rx[i] == 'R' && sUart2.sim_rx[i+1] == 'E' && sUart2.sim_rx[i+2] == 'S' && sUart2.sim_rx[i+3] == 'E' && sUart2.sim_rx[i+4] == 'T') return 1;
+	if(sUart2.sim_rx[i] == 'I' && sUart2.sim_rx[i+1] == 'D')
+	{
+		i=i+2;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		if(sUart2.sim_rx[i] == '=') return 2;
+	}
+	
+	if(sUart2.sim_rx[i] == 'B' && sUart2.sim_rx[i+1] == 'R')
+	{
+		i=i+2;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		if(sUart2.sim_rx[i] == '=') return 3;
+	}
+	return 0;
 }
 	
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
