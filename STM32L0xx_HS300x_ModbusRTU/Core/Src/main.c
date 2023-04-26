@@ -146,13 +146,13 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
-	for(int i=1;i<128;i++)
-	{
-		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
-		{
-			address=i;
-		}
-	}
+//	for(int i=1;i<128;i++)
+//	{
+//		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
+//		{
+//			address=i;
+//		}
+//	}
 	check_flash=FLASH_ReadData32(FLASH_startPage_data);
 	if(check_flash > 0)
 	{
