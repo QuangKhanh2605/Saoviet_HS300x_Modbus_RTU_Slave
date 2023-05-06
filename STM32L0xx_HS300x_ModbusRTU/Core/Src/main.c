@@ -52,12 +52,17 @@ Change "baud_rate;" To "MX_USART2_UART_Init();"
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
+IWDG_HandleTypeDef hiwdg;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
 int16_t Tem=0xFF;
 int16_t Humi=0xFF;
+
+int16_t Drop_Tem=0;
+int16_t Drop_Humi=0;
 
 char Tem_Humi[16];
 
@@ -86,6 +91,7 @@ uint16_t addr_humi_decimal     = 0x07;
 uint32_t baud_rate_value[8]={1200,2400,4800,9600,19200,38400,57600,115200};
 uint8_t calib_sensor[5]={0,0,0,0,0};
 char success[]="SUCCESS";
+char error[]="ERROR";
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -93,16 +99,18 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_IWDG_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void ModbusRTU_Slave(void);
 void Change_Baudrate_AddrSlave(void);
 void HAL_SYSTICK_Callback(void);
 void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length);
-void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2);
+void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2, uint32_t data3, uint32_t data4);
 uint32_t FLASH_ReadData32(uint32_t addr);
-uint8_t Terminal_Receive(void);
+int8_t Terminal_Receive(void);
 void send_success(void);
+void send_error(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -117,10 +125,6 @@ void send_success(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-
-
-
 	sUart2.huart = &huart2;
   /* USER CODE END 1 */
 
@@ -144,6 +148,7 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   MX_USART2_UART_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
 //	for(int i=1;i<128;i++)
@@ -156,8 +161,10 @@ int main(void)
 	check_flash=FLASH_ReadData32(FLASH_startPage_data);
 	if(check_flash > 0)
 	{
-		addr_stm32l0xx=FLASH_ReadData32(FLASH_startPage_data+4);
-		baud_rate     =FLASH_ReadData32(FLASH_startPage_data+8); 
+		addr_stm32l0xx = FLASH_ReadData32(FLASH_startPage_data+4);
+		baud_rate      = FLASH_ReadData32(FLASH_startPage_data+8); 
+		Drop_Tem       = FLASH_ReadData32(FLASH_startPage_data+12); 
+		Drop_Humi      = FLASH_ReadData32(FLASH_startPage_data+16); 
 		MX_USART2_UART_Init();
 		HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
 	}
@@ -178,6 +185,8 @@ int main(void)
 				Tem=0xFF;
 				Humi=0xFF;
 			}
+			Tem  = Tem  + Drop_Tem;
+			Humi = Humi + Drop_Humi;
 			aTemperature[0] = Tem >> 8;
 			aTemperature[1] = Tem;
 			aHumidity[0]    = 0x00;
@@ -185,6 +194,7 @@ int main(void)
 			GetTick_Ms = HAL_GetTick();
 		}
 		ModbusRTU_Slave();
+		HAL_IWDG_Refresh(&hiwdg);
   }
   /* USER CODE END 3 */
 }
@@ -206,10 +216,14 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_3;
+  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -219,12 +233,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -253,7 +267,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x00303D5B;
+  hi2c1.Init.Timing = 0x00506682;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -286,6 +300,35 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief IWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_IWDG_Init(void)
+{
+
+  /* USER CODE BEGIN IWDG_Init 0 */
+
+  /* USER CODE END IWDG_Init 0 */
+
+  /* USER CODE BEGIN IWDG_Init 1 */
+
+  /* USER CODE END IWDG_Init 1 */
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
+  hiwdg.Init.Window = 312;
+  hiwdg.Init.Reload = 312;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN IWDG_Init 2 */
+
+  /* USER CODE END IWDG_Init 2 */
+
+}
+
+/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -301,7 +344,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = baud_rate;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -390,7 +433,7 @@ void ModbusRTU_Slave(void)
 					if(addr_data == 0x0000 && length_register >= 1)
 					{
 						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
-						FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+						FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
 					}
 					
 					if(addr_data == 0x0001 && length_register >= 1)
@@ -399,7 +442,7 @@ void ModbusRTU_Slave(void)
 						baud_rate = baud_rate_value[tmp_baud_rate];
 						MX_USART2_UART_Init();
 						HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
-						FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+						FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
 					}
 					
 					if(addr_data <= 0x0001 && length_register >= 1)
@@ -429,8 +472,13 @@ void ModbusRTU_Slave(void)
 }
 void Change_Baudrate_AddrSlave(void)
 {
-	uint8_t receive_ctrl=0;
+	int8_t receive_ctrl=0;
 	receive_ctrl=Terminal_Receive();
+	if(receive_ctrl == -1)
+	{
+		send_error();
+	}
+	
 	if(receive_ctrl == 1)
 	{
 		addr_stm32l0xx = 0x1A;
@@ -439,7 +487,7 @@ void Change_Baudrate_AddrSlave(void)
 		
 		MX_USART2_UART_Init();
 		HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
-		FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+		FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
 	}
 	
 	if(receive_ctrl == 2)
@@ -471,8 +519,16 @@ void Change_Baudrate_AddrSlave(void)
 			{
 				addr_stm32l0xx = tmp;
 				send_success();
-				FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+				FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
 			}
+			else
+			{
+				send_error();
+			}
+		}
+		else
+		{
+			send_error();
 		}
 	}
 	
@@ -496,7 +552,88 @@ void Change_Baudrate_AddrSlave(void)
 			
 			MX_USART2_UART_Init();
 			HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
-			FLASH_WritePage(1, addr_stm32l0xx, baud_rate);
+			FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
+		}
+		else
+		{
+			send_error();
+		}
+	}
+	
+	if(receive_ctrl == 4 || receive_ctrl == -4)
+	{
+		uint8_t i=0;
+		uint8_t count=0;
+		while(sUart2.sim_rx[i] < '0' || sUart2.sim_rx[i] > '9')
+		{
+			i++;
+		}
+		
+		while( sUart2.sim_rx[i] >= '0' && sUart2.sim_rx[i] <= '9' && i<sUart2.countBuffer)
+		{
+			i++;
+			count++;
+		}
+		i--;
+		
+		if(count >0 && count <=3)
+		{
+			uint16_t tmp=0;
+			if(count == 1) tmp = (sUart2.sim_rx[i] -48);
+			if(count == 2) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 ;
+			if(count == 3) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 + (sUart2.sim_rx[i-2] -48)*100;
+			if(receive_ctrl == 4)
+			{
+				Drop_Tem = tmp;
+			}
+			if(receive_ctrl == -4)
+			{
+				Drop_Tem = 0 - tmp;
+			}
+			send_success();
+			FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
+		}
+		else
+		{
+			send_error();
+		}
+	}
+	
+	if(receive_ctrl == 5 || receive_ctrl == -5)
+	{
+		uint8_t i=0;
+		uint8_t count=0;
+		while(sUart2.sim_rx[i] < '0' || sUart2.sim_rx[i] > '9')
+		{
+			i++;
+		}
+		
+		while( sUart2.sim_rx[i] >= '0' && sUart2.sim_rx[i] <= '9' && i<sUart2.countBuffer)
+		{
+			i++;
+			count++;
+		}
+		i--;
+		
+		if(count >0)
+		{
+			uint8_t tmp=0;
+			tmp = (sUart2.sim_rx[i] -48);
+			if(receive_ctrl == 5)
+			{
+				Drop_Humi = tmp;
+			}
+			if(receive_ctrl == -5)
+			{
+				Drop_Humi = 0 - tmp;
+			}
+			
+			send_success();
+			FLASH_WritePage(1, addr_stm32l0xx, baud_rate, Drop_Tem, Drop_Humi);
+		}
+		else
+		{
+			send_error();
 		}
 	}
 }
@@ -509,7 +646,15 @@ void send_success(void)
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 }
 
-uint8_t Terminal_Receive(void)
+void send_error(void)
+{
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(&huart2,(uint8_t *)error,(uint16_t)strlen(error),1000);
+	HAL_UART_Transmit(&huart2,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+}
+
+int8_t Terminal_Receive(void)
 {
 	uint16_t i=0;
 	while(sUart2.sim_rx[i] == ' ' )
@@ -524,7 +669,7 @@ uint8_t Terminal_Receive(void)
 		i++;
 	}
 	if(sUart2.sim_rx[i] == '+') i++;
-	else return 0;
+	else return -1;
 	
 	while(sUart2.sim_rx[i] == ' ')
 	{
@@ -539,6 +684,7 @@ uint8_t Terminal_Receive(void)
 			i++;
 		}
 		if(sUart2.sim_rx[i] == '=') return 2;
+		return -1;
 	}
 	
 	if(sUart2.sim_rx[i] == 'B' && sUart2.sim_rx[i+1] == 'R')
@@ -549,6 +695,49 @@ uint8_t Terminal_Receive(void)
 			i++;
 		}
 		if(sUart2.sim_rx[i] == '=') return 3;
+		return -1;
+	}
+	
+	if(sUart2.sim_rx[i] == 'C' && sUart2.sim_rx[i+1] == 'L' && sUart2.sim_rx[i+2] == 'T')
+	{
+		i=i+3;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		if(sUart2.sim_rx[i] == '=')
+		{
+			i=i+1;
+			while(sUart2.sim_rx[i] == ' ')
+			{
+				i++;
+			}
+			if(sUart2.sim_rx[i] == '+') return 4;
+			if(sUart2.sim_rx[i] == '-') return -4;
+			return -1;
+		}
+		return -1;
+	}
+	
+	if(sUart2.sim_rx[i] == 'C' && sUart2.sim_rx[i+1] == 'L' && sUart2.sim_rx[i+2] == 'H')
+	{
+		i=i+3;
+		while(sUart2.sim_rx[i] == ' ')
+		{
+			i++;
+		}
+		if(sUart2.sim_rx[i] == '=')
+		{
+			i=i+1;
+			while(sUart2.sim_rx[i] == ' ')
+			{
+				i++;
+			}
+			if(sUart2.sim_rx[i] == '+') return 5;
+			if(sUart2.sim_rx[i] == '-') return -5;
+			return -1;
+		}
+		return -1;
 	}
 	return 0;
 }
@@ -646,7 +835,7 @@ void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length
 	}
 }
 
-void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2)
+void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2, uint32_t data3, uint32_t data4)
 {
   HAL_FLASH_Unlock();
 	FLASH_EraseInitTypeDef EraseInit;
@@ -658,6 +847,8 @@ void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2)
 	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data , check);
 	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 4, data1); //4 byte dau tien
 	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 8, data2); //4 byte tiep theo
+	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 12, data3); //4 byte tiep theo
+	HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, FLASH_startPage_data + 16, data4); //4 byte tiep theo
   HAL_FLASH_Lock();
 }
 

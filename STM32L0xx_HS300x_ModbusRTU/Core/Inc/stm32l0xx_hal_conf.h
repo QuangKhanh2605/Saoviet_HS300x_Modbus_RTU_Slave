@@ -45,7 +45,7 @@
 /*#define HAL_DAC_MODULE_ENABLED   */
 /*#define HAL_FIREWALL_MODULE_ENABLED   */
 /*#define HAL_I2S_MODULE_ENABLED   */
-/*#define HAL_IWDG_MODULE_ENABLED   */
+#define HAL_IWDG_MODULE_ENABLED
 /*#define HAL_LCD_MODULE_ENABLED   */
 /*#define HAL_LPTIM_MODULE_ENABLED   */
 /*#define HAL_RNG_MODULE_ENABLED   */
@@ -137,7 +137,7 @@
   * @brief This is the HAL system configuration section
   */
 #define  VDD_VALUE                    ((uint32_t)3300U) /*!< Value of VDD in mv */
-#define  TICK_INT_PRIORITY            ((uint32_t)3U)    /*!< tick interrupt priority */
+#define  TICK_INT_PRIORITY            ((uint32_t)1U)    /*!< tick interrupt priority */
 #define  USE_RTOS                     0U
 #define  PREFETCH_ENABLE              0U
 #define  PREREAD_ENABLE               1U
