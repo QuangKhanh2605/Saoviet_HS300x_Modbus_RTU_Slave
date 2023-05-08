@@ -511,7 +511,7 @@ void Change_Baudrate_AddrSlave(void)
 		i--;
 		if(count >0 && count <=3)
 		{
-			uint8_t tmp=0;
+			uint16_t tmp=0;
 			if(count == 1) tmp = (sUart2.sim_rx[i] -48);
 			if(count == 2) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 ;
 			if(count == 3) tmp = (sUart2.sim_rx[i] -48) + (sUart2.sim_rx[i-1] -48)*10 + (sUart2.sim_rx[i-2] -48)*100;
