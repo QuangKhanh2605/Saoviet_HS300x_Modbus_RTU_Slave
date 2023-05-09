@@ -72,16 +72,16 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud
 						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
 						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
 					}
-					else if(length_register == 2)
-					{
-						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
-						uint16_t tmp_baud_rate = data_frame[2] << 8 | data_frame[3];
-						baud_rate = baud_rate_value[tmp_baud_rate];
-						Uart2_Init(rx_uart,baud_rate);
-						HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
-						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
-						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
-					}
+//					else if(length_register == 2)
+//					{
+//						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
+//						uint16_t tmp_baud_rate = data_frame[2] << 8 | data_frame[3];
+//						baud_rate = baud_rate_value[tmp_baud_rate];
+//						Uart2_Init(rx_uart,baud_rate);
+//						HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
+//						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
+//						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
+//					}
 					else
 					{
 						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
