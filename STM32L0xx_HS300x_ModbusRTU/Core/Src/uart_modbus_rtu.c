@@ -240,16 +240,7 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	if(receive_ctrl == 5 || receive_ctrl == -5)
 	{
 		uint8_t i=8;
-		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9' )
-		{
-			i++;
-			count++;
-			if(i == rx_uart->countBuffer) break;
-		}
-		i--;
-		
-		if(count >0)
+		if( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9' )
 		{
 			uint8_t tmp=0;
 			tmp = (rx_uart->sim_rx[i] -48);
@@ -303,7 +294,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		length_addr--;
 		j--;
 	}
-	Slave_IF[i]=','  ; Slave_IF[i+1]=' '; i += 2 + length_baud_rate; j = i - 1;
+	Slave_IF[i]=','; i += 1 + length_baud_rate; j = i - 1;
 	
 	while(length_baud_rate > 0)
 	{
@@ -313,11 +304,11 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		j--;
 	}
 	
-	Slave_IF[i]=',';     Slave_IF[i+1]=' ';
-	if(drop_tem <0)      Slave_IF[i+2]='-';
-	else if(drop_tem >0) Slave_IF[i+2]='+';
+	Slave_IF[i]=',';
+	if(drop_tem <0)      Slave_IF[i+1]='-';
+	else if(drop_tem >0) Slave_IF[i+1]='+';
 	else                 i--;	
-	i += 3 + length_drop_tem; j = i - 1;
+	i += 2 + length_drop_tem; j = i - 1;
 	while(length_drop_tem > 0)
 	{
 		Slave_IF[j] = (stamp_drop_tem % 10) + 48;
@@ -326,11 +317,11 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		j--;
 	}
 	
-	Slave_IF[i]=',';      Slave_IF[i+1]=' ';
-	if(drop_humi < 0)     Slave_IF[i+2]='-';
-	else if(drop_humi >0) Slave_IF[i+2]='+'; 
+	Slave_IF[i]=',';
+	if(drop_humi < 0)     Slave_IF[i+1]='-';
+	else if(drop_humi >0) Slave_IF[i+1]='+'; 
 	else                  i--;     
-	i += 3 + length_drop_humi; j = i - 1;
+	i += 2 + length_drop_humi; j = i - 1;
 	while(length_drop_humi > 0)
 	{
 		Slave_IF[j] = (stamp_drop_humi % 10) + 48;
@@ -374,7 +365,7 @@ int8_t Terminal_Receive(UART_BUFFER *rx_uart)
 		if(rx_uart->sim_rx[i] == '=') return 2;
 		return -1;
 	}
-	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'F') return -2;
+	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'F' && rx_uart->sim_rx[i+2] == '?') return -2;
 	
 	if(rx_uart->sim_rx[i] == 'B' && rx_uart->sim_rx[i+1] == 'R')
 	{

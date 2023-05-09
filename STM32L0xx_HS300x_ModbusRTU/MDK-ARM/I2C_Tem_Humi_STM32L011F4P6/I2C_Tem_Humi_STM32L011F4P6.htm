@@ -3,7 +3,7 @@
 <title>Static Call Graph - [I2C_Tem_Humi_STM32L011F4P6\I2C_Tem_Humi_STM32L011F4P6.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image I2C_Tem_Humi_STM32L011F4P6\I2C_Tem_Humi_STM32L011F4P6.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue May 09 11:40:53 2023
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue May 09 12:02:54 2023
 <BR><P>
 <H3>Maximum Stack Usage =        336 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -405,7 +405,7 @@ Global Symbols
 
 <P><STRONG><a name="[d4]"></a>__semihosting_library_function</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, indicate_semi.o(.text), UNUSED)
 
-<P><STRONG><a name="[41]"></a>AT_Command_IF</STRONG> (Thumb, 414 bytes, Stack size 72 bytes, uart_modbus_rtu.o(i.AT_Command_IF))
+<P><STRONG><a name="[41]"></a>AT_Command_IF</STRONG> (Thumb, 400 bytes, Stack size 72 bytes, uart_modbus_rtu.o(i.AT_Command_IF))
 <BR><BR>[Stack]<UL><LI>Max Depth = 184<LI>Call Chain = AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[45]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Send_Success
@@ -416,7 +416,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
-<P><STRONG><a name="[46]"></a>Change_Baudrate_AddrSlave</STRONG> (Thumb, 656 bytes, Stack size 40 bytes, uart_modbus_rtu.o(i.Change_Baudrate_AddrSlave))
+<P><STRONG><a name="[46]"></a>Change_Baudrate_AddrSlave</STRONG> (Thumb, 620 bytes, Stack size 40 bytes, uart_modbus_rtu.o(i.Change_Baudrate_AddrSlave))
 <BR><BR>[Stack]<UL><LI>Max Depth = 224<LI>Call Chain = Change_Baudrate_AddrSlave &rArr; AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Receive_IT
@@ -968,7 +968,7 @@ Global Symbols
 <P><STRONG><a name="[1f]"></a>SystemInit</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, system_stm32l0xx.o(i.SystemInit))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32l011xx.o(.text)
 </UL>
-<P><STRONG><a name="[47]"></a>Terminal_Receive</STRONG> (Thumb, 192 bytes, Stack size 0 bytes, uart_modbus_rtu.o(i.Terminal_Receive))
+<P><STRONG><a name="[47]"></a>Terminal_Receive</STRONG> (Thumb, 198 bytes, Stack size 0 bytes, uart_modbus_rtu.o(i.Terminal_Receive))
 <BR><BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
