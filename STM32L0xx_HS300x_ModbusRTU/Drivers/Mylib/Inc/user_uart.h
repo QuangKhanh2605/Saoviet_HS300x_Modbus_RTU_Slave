@@ -6,12 +6,14 @@
 
 #define COMPLETE_RECEIVE_UART_TIME_MS 9
 
+#define LENGTH_BUFFER_UART 20
+
 typedef struct
 {
 	UART_HandleTypeDef* huart;
 	uint8_t buffer;
 	uint16_t countBuffer;
-	uint8_t sim_rx[20];
+	uint8_t sim_rx[LENGTH_BUFFER_UART];
 }UART_BUFFER;
 
 int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart);

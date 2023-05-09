@@ -3,7 +3,6 @@
 uint16_t check_countBuffer_uart=0;
 uint32_t Get_systick_countBuffer_uart=0;
 uint16_t State_systick_countBuffer_uart=0;
-uint16_t a=0;
 
 int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 {
@@ -13,13 +12,14 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 		if(State_systick_countBuffer_uart == 0 )
 		{
 			Get_systick_countBuffer_uart = HAL_GetTick();
-			State_systick_countBuffer_uart = 1;
 			check_countBuffer_uart = rx_uart->countBuffer;
+			State_systick_countBuffer_uart = 1;
 		}
 		
 		if(Get_systick_countBuffer_uart>HAL_GetTick()) Get_systick_countBuffer_uart=0;
+
 		
-		if(HAL_GetTick() - Get_systick_countBuffer_uart>COMPLETE_RECEIVE_UART_TIME_MS && State_systick_countBuffer_uart == 1)	
+		if(HAL_GetTick() - Get_systick_countBuffer_uart>COMPLETE_RECEIVE_UART_TIME_MS && State_systick_countBuffer_uart == 1)	// sua timeout theo baud rate
 		{
 			if(check_countBuffer_uart == rx_uart->countBuffer)
 			{
@@ -42,15 +42,14 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 
 void Delete_Buffer(UART_BUFFER *rx_uart)
 {
-	int len = rx_uart->countBuffer;
 	rx_uart->countBuffer=0;
 	rx_uart->buffer=0x00;
-	a=len;
-	for(int i = 0; i < len; i++)
+	for(int i = 0; i < LENGTH_BUFFER_UART; i++)
 	{
 		rx_uart->sim_rx[i] = 0x00;
 	}
 }
+
 
 void Transmit_Data_Uart(UART_BUFFER *rx_uart, char* command)
 {
