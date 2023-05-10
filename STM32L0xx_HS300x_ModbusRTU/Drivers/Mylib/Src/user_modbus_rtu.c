@@ -282,7 +282,7 @@ uint8_t ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t 
     return 1;
 }
 
-void Response_Error_CRC(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code)
+void Response_Error(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code)
 {
 	uint16_t Count = 0;
 	

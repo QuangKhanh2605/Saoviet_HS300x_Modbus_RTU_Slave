@@ -16,10 +16,7 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 			State_systick_countBuffer_uart = 1;
 		}
 		
-		if(Get_systick_countBuffer_uart>HAL_GetTick()) Get_systick_countBuffer_uart=0;
-
-		
-		if(HAL_GetTick() - Get_systick_countBuffer_uart>COMPLETE_RECEIVE_UART_TIME_MS && State_systick_countBuffer_uart == 1)	// sua timeout theo baud rate
+		if(HAL_GetTick() - Get_systick_countBuffer_uart>COMPLETE_RECEIVE_UART_TIME_MS && State_systick_countBuffer_uart == 1)	
 		{
 			if(check_countBuffer_uart == rx_uart->countBuffer)
 			{

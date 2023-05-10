@@ -24,7 +24,6 @@
 /* USER CODE BEGIN Includes */
 #include "HS300x.h"
 #include "uart_modbus_rtu.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -52,33 +51,34 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
-int16_t Tem=0;
-int16_t Humi=0;
+int16_t tem=0;
+int16_t humi=0;
 
-int16_t Drop_Tem=0;
-int16_t Drop_Humi=0;
+int16_t drop_tem=0;
+int16_t drop_humi=0;
 
 UART_BUFFER sUart2 = 
 {
- .huart = &huart2,
+	.huart = &huart2,
 };
 
 uint8_t check_flash=0;
 
 uint32_t baud_rate      = 115200;
-uint8_t addr_stm32l0xx = 0x1A;
-
-uint16_t addr_baud_rate        = 0x01;
-
-uint16_t addr_tem              = 0x02;
-uint16_t addr_tem_unit         = 0x03;
-uint16_t addr_tem_decimal      = 0x04;
-
-uint16_t addr_humi             = 0X05;
-uint16_t addr_humi_uint        = 0X06;
-uint16_t addr_humi_decimal     = 0x07;
+uint8_t  addr_stm32l0xx = 26;
 
 uint8_t check_complete_read_sensor=0;
+uint8_t address=0;
+
+//uint16_t addr_baud_rate        = 0x01;
+
+//uint16_t addr_tem              = 0x02;
+//uint16_t addr_tem_unit         = 0x03;
+//uint16_t addr_tem_decimal      = 0x04;
+
+//uint16_t addr_humi             = 0X05;
+//uint16_t addr_humi_uint        = 0X06;
+//uint16_t addr_humi_decimal     = 0x07;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -100,6 +100,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -141,8 +142,8 @@ int main(void)
 	{
 		addr_stm32l0xx = FLASH_ReadData32(FLASH_STARTPAGE_DATA+4);
 		baud_rate      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+8); 
-		Drop_Tem       = FLASH_ReadData32(FLASH_STARTPAGE_DATA+12); 
-		Drop_Humi      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+16); 
+		drop_tem       = FLASH_ReadData32(FLASH_STARTPAGE_DATA+12); 
+		drop_humi      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+16); 
 		
 	}
 	Uart2_Init(&sUart2, baud_rate);
@@ -159,13 +160,13 @@ int main(void)
 		uint32_t check_gettick = HAL_GetTick() - GetTick_Ms;
 		if(check_gettick > TIME_SAMPLING) 
 		{
-			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&Tem, (int16_t*)&Humi)==1)
+			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&tem, (int16_t*)&humi)==1)
 			{
-				Tem=0xFF; 
-				Humi=0xFF;
+				tem=0xFF; 
+				humi=0xFF;
 			}
-			Tem  = Tem  + Drop_Tem;
-			Humi = Humi + Drop_Humi;
+			tem  = tem  + drop_tem;
+			humi = humi + drop_humi;
 			check_complete_read_sensor=1;
 			GetTick_Ms = HAL_GetTick();
 		}
@@ -173,8 +174,8 @@ int main(void)
 		{
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
-				Change_Baudrate_AddrSlave(&sUart2, &addr_stm32l0xx, &baud_rate, &Drop_Tem, &Drop_Humi);
-				ModbusRTU_Slave(&sUart2, addr_stm32l0xx, baud_rate, Tem, Humi, Drop_Tem, Drop_Humi);
+				Change_Baudrate_AddrSlave(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
+				ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi);
 				Delete_Buffer(&sUart2);
 			}
 		}
@@ -386,7 +387,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		if(sUart2.countBuffer < LENGTH_BUFFER_UART)
 		{
-			sUart2.sim_rx[(sUart2.countBuffer)++]= sUart2.buffer; 
+			sUart2.sim_rx[(sUart2.countBuffer)++]= sUart2.buffer;
+			if(sUart2.countBuffer == LENGTH_BUFFER_UART) sUart2.countBuffer = 0;
 		}
 		HAL_UART_Receive_IT(&huart2,&sUart2.buffer,1);
 	}

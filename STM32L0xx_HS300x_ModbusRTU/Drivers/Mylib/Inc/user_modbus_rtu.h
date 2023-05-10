@@ -31,6 +31,6 @@ uint8_t     ModRTU_Master_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t
 uint8_t     ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t Address, uint8_t FunCode, uint16_t Add_Data, uint16_t LengthData, uint8_t* aData);
 uint8_t     ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t FunCode, uint16_t AddrRegis, uint16_t LengthRegis, uint8_t *pData);
 
-void        Response_Error_CRC(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code);
+void        Response_Error(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code);
 #endif
 
