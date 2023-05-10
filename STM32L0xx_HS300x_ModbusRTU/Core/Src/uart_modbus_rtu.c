@@ -3,22 +3,22 @@
 uint32_t baud_rate_value[8]={1200,2400,4800,9600,19200,38400,57600,115200};
 char success[]="SUCCESS";
 char error[]="ERROR";
-char Slave_IF[25];
+char Slave_IF[21];
 
-void Get_Length_Variable(uint8_t *length, uint16_t variable);
+void Get_Length_Variable(uint8_t *length, uint32_t variable);
 int8_t Terminal_Receive(UART_BUFFER *rx_uart);
 void Send_Success(UART_BUFFER *rx_uart);
 void Send_Error(UART_BUFFER *rx_uart);
 void Send_Slave_IF(UART_BUFFER *rx_uart);
 
-void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t Tem, int16_t Humi);
+void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi);
 void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
 
-void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
+void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
 {
-	if(rx_uart->sim_rx[0] == addr_stm32l0xx)
+	if(rx_uart->sim_rx[0] == *addr_stm32l0xx)
 	{
-		uint8_t frame[128]={0}; 
+		uint8_t frame[30]={0}; 
 		sData sFrame;
 		sFrame.Data_a8 = frame;
 		uint16_t CRC_rx = rx_uart->sim_rx[rx_uart->countBuffer-1] << 8 | rx_uart->sim_rx[rx_uart->countBuffer-2];
@@ -39,90 +39,76 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud
 						uint8_t length_check = (8 - addr_data) * 2;
 						if(length_register >= 1 && length_register <= length_check)
 						{
-							Packing_Frame(data_frame, addr_data, addr_stm32l0xx, baud_rate, length_register, tem, humi);
-							ModRTU_Slave_ACK_Read_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
+							Packing_Frame(data_frame, *addr_stm32l0xx, addr_data, length_register, *baud_rate, tem, humi);
+							ModRTU_Slave_ACK_Read_Frame(&sFrame, *addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
 						}
 						else
 						{
-							Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+							Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 						}
 					}
 					else
 					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 				}
 				else
 				{
-					Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C);
+					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C);
 				}
 			}
 			else if(FunCode == 0x06)
 			{
-				for(uint8_t i=0;i<(length_register * 2);i++)
-				{
-					data_frame[i]= rx_uart->sim_rx[4+i];
-				}
-				
 				if(addr_data == 0x0000)
 				{
-					if(length_register == 1)
+					
+					uint8_t addr = rx_uart->sim_rx[4] << 8 | rx_uart->sim_rx[5];
+					if(addr > 0 && addr <= 255)
 					{
-						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
-						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
-						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
+						*addr_stm32l0xx = addr;
+						FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, drop_tem, drop_humi);
+						ModRTU_Slave_ACK_Write_Frame(&sFrame, *addr_stm32l0xx, FunCode, addr_data, 1, data_frame);
 					}
-//					else if(length_register == 2)
-//					{
-//						addr_stm32l0xx = data_frame[0] << 8 | data_frame[1];
-//						uint16_t tmp_baud_rate = data_frame[2] << 8 | data_frame[3];
-//						baud_rate = baud_rate_value[tmp_baud_rate];
-//						Uart2_Init(rx_uart,baud_rate);
-//						HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
-//						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
-//						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
-//					}
 					else
 					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 				}
 				
 				else if(addr_data == 0x0001)
 				{
-					if(length_register == 1)
+					uint16_t tmp_baud_rate = rx_uart->sim_rx[4] << 8 | rx_uart->sim_rx[5];
+					if(tmp_baud_rate >0 && tmp_baud_rate <=7)
 					{
-						uint16_t tmp_baud_rate = data_frame[0] << 8 | data_frame[1];
-						baud_rate = baud_rate_value[tmp_baud_rate];
-						Uart2_Init(rx_uart, baud_rate);
+						*baud_rate = baud_rate_value[tmp_baud_rate];
+						Uart2_Init(rx_uart, *baud_rate);
 						HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
-						FLASH_WritePage(0xA5, addr_stm32l0xx, baud_rate, drop_tem, drop_humi);
-						ModRTU_Slave_ACK_Write_Frame(&sFrame, addr_stm32l0xx, FunCode, addr_data, length_register/2, data_frame);
+						FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, drop_tem, drop_humi);
+						ModRTU_Slave_ACK_Write_Frame(&sFrame, *addr_stm32l0xx, FunCode, addr_data, 1, data_frame);
 					}
 					else
 					{
-						Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 				}
 				else
 				{
-					Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 				}
 			}
 			else
 			{
-				Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_FUNCTION_CODE);
+				Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_FUNCTION_CODE);
 			}
 		}
 		else
 		{
-			Response_Error_CRC(&sFrame, addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_CHECK_CRC);
+			Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_CHECK_CRC);
 		}
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
 		HAL_UART_Transmit(rx_uart->huart, sFrame.Data_a8, sFrame.Length_u16, 1000);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 	}
-	
 }
 
 void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
@@ -186,7 +172,15 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	if(receive_ctrl == 3)
 	{
 		uint8_t i=6;
-		if(rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '7' )
+		uint8_t count=0;
+		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '7')
+		{
+			i++;
+			count++;
+			if(i == rx_uart->countBuffer) break;
+		}
+		i--;
+		if(count == 1)
 		{
 			uint8_t tmp = rx_uart->sim_rx[i] - 48;
 			*baud_rate=baud_rate_value[tmp];
@@ -241,15 +235,14 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	{
 		uint8_t i=8;
 		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9' )
+		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9')
 		{
 			i++;
 			count++;
 			if(i == rx_uart->countBuffer) break;
 		}
 		i--;
-		
-		if(count >0)
+		if(count == 1)
 		{
 			uint8_t tmp=0;
 			tmp = (rx_uart->sim_rx[i] -48);
@@ -303,7 +296,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		length_addr--;
 		j--;
 	}
-	Slave_IF[i]=','  ; Slave_IF[i+1]=' '; i += 2 + length_baud_rate; j = i - 1;
+	Slave_IF[i]=','; i += 1 + length_baud_rate; j = i - 1;
 	
 	while(length_baud_rate > 0)
 	{
@@ -313,11 +306,11 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		j--;
 	}
 	
-	Slave_IF[i]=',';     Slave_IF[i+1]=' ';
-	if(drop_tem <0)      Slave_IF[i+2]='-';
-	else if(drop_tem >0) Slave_IF[i+2]='+';
+	Slave_IF[i]=',';
+	if(drop_tem <0)      Slave_IF[i+1]='-';
+	else if(drop_tem >0) Slave_IF[i+1]='+';
 	else                 i--;	
-	i += 3 + length_drop_tem; j = i - 1;
+	i += 2 + length_drop_tem; j = i - 1;
 	while(length_drop_tem > 0)
 	{
 		Slave_IF[j] = (stamp_drop_tem % 10) + 48;
@@ -326,11 +319,11 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		j--;
 	}
 	
-	Slave_IF[i]=',';      Slave_IF[i+1]=' ';
-	if(drop_humi < 0)     Slave_IF[i+2]='-';
-	else if(drop_humi >0) Slave_IF[i+2]='+'; 
+	Slave_IF[i]=',';
+	if(drop_humi < 0)     Slave_IF[i+1]='-';
+	else if(drop_humi >0) Slave_IF[i+1]='+'; 
 	else                  i--;     
-	i += 3 + length_drop_humi; j = i - 1;
+	i += 2 + length_drop_humi; j = i - 1;
 	while(length_drop_humi > 0)
 	{
 		Slave_IF[j] = (stamp_drop_humi % 10) + 48;
@@ -338,7 +331,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		length_drop_humi--;
 		j--;
 	}
-	while(i<25)
+	while(i<21)
 	{
 		Slave_IF[i]=' ';
 		i++;
@@ -348,7 +341,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 	Send_Success(rx_uart);
 }
 
-void Get_Length_Variable(uint8_t *length, uint16_t variable)
+void Get_Length_Variable(uint8_t *length, uint32_t variable)
 {
 	while(variable/10 >=1)
 	{
@@ -367,14 +360,39 @@ int8_t Terminal_Receive(UART_BUFFER *rx_uart)
 	if(rx_uart->sim_rx[i] == '+') i++;
 	else return -1;
 	
-	if(rx_uart->sim_rx[i] == 'R' && rx_uart->sim_rx[i+1] == 'E' && rx_uart->sim_rx[i+2] == 'S' && rx_uart->sim_rx[i+3] == 'E' && rx_uart->sim_rx[i+4] == 'T') return 1;
+	if(rx_uart->sim_rx[i] == 'R' && rx_uart->sim_rx[i+1] == 'E' && rx_uart->sim_rx[i+2] == 'S' && rx_uart->sim_rx[i+3] == 'E' && rx_uart->sim_rx[i+4] == 'T') 
+	{
+		if(i+5 == rx_uart->countBuffer) return 1;
+		else
+		{
+			while(i+5 < rx_uart->countBuffer)
+			{
+				if(rx_uart->sim_rx[i+5] >32) return -1;
+				i++;
+			}
+			return 1;
+		}
+	}
+	
 	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'D')
 	{
 		i=i+2;
 		if(rx_uart->sim_rx[i] == '=') return 2;
 		return -1;
 	}
-	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'F') return -2;
+	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'F' && rx_uart->sim_rx[i+2] == '?') 
+	{
+		if(i+3 == rx_uart->countBuffer) return -2;
+		else
+		{
+			while(i+3 < rx_uart->countBuffer)
+			{
+				if(rx_uart->sim_rx[i+3] >32) return -1;
+				i++;
+			}
+			return -2;
+		}
+	}
 	
 	if(rx_uart->sim_rx[i] == 'B' && rx_uart->sim_rx[i+1] == 'R')
 	{
@@ -414,6 +432,7 @@ int8_t Terminal_Receive(UART_BUFFER *rx_uart)
 void Send_Slave_IF(UART_BUFFER *rx_uart)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)Slave_IF,(uint16_t)strlen(Slave_IF),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);	
@@ -422,6 +441,7 @@ void Send_Slave_IF(UART_BUFFER *rx_uart)
 void Send_Success(UART_BUFFER *rx_uart)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)success,(uint16_t)strlen(success),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
@@ -430,11 +450,12 @@ void Send_Success(UART_BUFFER *rx_uart)
 void Send_Error(UART_BUFFER *rx_uart)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)error,(uint16_t)strlen(error),1000);
 	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 }
-void Packing_Frame(uint8_t data_frame[], uint16_t addr_register, uint16_t length, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t Tem, int16_t Humi)
+void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi)
 {
 	uint8_t i=0;
 	// address slave

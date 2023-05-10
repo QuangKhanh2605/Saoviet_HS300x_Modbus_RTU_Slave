@@ -3,11 +3,11 @@
 <title>Static Call Graph - [I2C_Tem_Humi_STM32L011F4P6\I2C_Tem_Humi_STM32L011F4P6.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image I2C_Tem_Humi_STM32L011F4P6\I2C_Tem_Humi_STM32L011F4P6.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Tue May 09 11:40:53 2023
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060750: Last Updated: Wed May 10 16:46:06 2023
 <BR><P>
-<H3>Maximum Stack Usage =        336 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =        248 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
-__rt_entry_main &rArr; main &rArr; ModbusRTU_Slave &rArr; FLASH_WritePage &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
+__rt_entry_main &rArr; main &rArr; Change_Baudrate_AddrSlave &rArr; AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 <P>
 <H3>
 Functions with no stack information
@@ -171,8 +171,8 @@ Global Symbols
 <P><STRONG><a name="[c1]"></a>__rt_entry_postsh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000009))
 
 <P><STRONG><a name="[2d]"></a>__rt_entry_main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000D))
-<BR><BR>[Stack]<UL><LI>Max Depth = 336 + Unknown Stack Size
-<LI>Call Chain = __rt_entry_main &rArr; main &rArr; ModbusRTU_Slave &rArr; FLASH_WritePage &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
+<BR><BR>[Stack]<UL><LI>Max Depth = 248 + Unknown Stack Size
+<LI>Call Chain = __rt_entry_main &rArr; main &rArr; Change_Baudrate_AddrSlave &rArr; AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[2e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[2f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;exit
@@ -405,7 +405,7 @@ Global Symbols
 
 <P><STRONG><a name="[d4]"></a>__semihosting_library_function</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, indicate_semi.o(.text), UNUSED)
 
-<P><STRONG><a name="[41]"></a>AT_Command_IF</STRONG> (Thumb, 414 bytes, Stack size 72 bytes, uart_modbus_rtu.o(i.AT_Command_IF))
+<P><STRONG><a name="[41]"></a>AT_Command_IF</STRONG> (Thumb, 398 bytes, Stack size 72 bytes, uart_modbus_rtu.o(i.AT_Command_IF))
 <BR><BR>[Stack]<UL><LI>Max Depth = 184<LI>Call Chain = AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[45]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Send_Success
@@ -416,7 +416,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
-<P><STRONG><a name="[46]"></a>Change_Baudrate_AddrSlave</STRONG> (Thumb, 656 bytes, Stack size 40 bytes, uart_modbus_rtu.o(i.Change_Baudrate_AddrSlave))
+<P><STRONG><a name="[46]"></a>Change_Baudrate_AddrSlave</STRONG> (Thumb, 690 bytes, Stack size 40 bytes, uart_modbus_rtu.o(i.Change_Baudrate_AddrSlave))
 <BR><BR>[Stack]<UL><LI>Max Depth = 224<LI>Call Chain = Change_Baudrate_AddrSlave &rArr; AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Receive_IT
@@ -430,8 +430,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[2e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[4c]"></a>Check_CountBuffer_Complete_Uart</STRONG> (Thumb, 96 bytes, Stack size 24 bytes, user_uart.o(i.Check_CountBuffer_Complete_Uart))
-<BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = Check_CountBuffer_Complete_Uart
+<P><STRONG><a name="[4c]"></a>Check_CountBuffer_Complete_Uart</STRONG> (Thumb, 84 bytes, Stack size 16 bytes, user_uart.o(i.Check_CountBuffer_Complete_Uart))
+<BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = Check_CountBuffer_Complete_Uart
 </UL>
 <BR>[Calls]<UL><LI><a href="#[4d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 </UL>
@@ -801,7 +801,7 @@ Global Symbols
 <LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
-<P><STRONG><a name="[7f]"></a>HAL_UART_RxCpltCallback</STRONG> (Thumb, 46 bytes, Stack size 8 bytes, main.o(i.HAL_UART_RxCpltCallback))
+<P><STRONG><a name="[7f]"></a>HAL_UART_RxCpltCallback</STRONG> (Thumb, 56 bytes, Stack size 8 bytes, main.o(i.HAL_UART_RxCpltCallback))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = HAL_UART_RxCpltCallback &rArr; HAL_UART_Receive_IT &rArr; UART_Start_Receive_IT
 </UL>
 <BR>[Calls]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Receive_IT
@@ -872,8 +872,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModbusRTU_Slave
 </UL>
 
-<P><STRONG><a name="[90]"></a>ModbusRTU_Slave</STRONG> (Thumb, 394 bytes, Stack size 208 bytes, uart_modbus_rtu.o(i.ModbusRTU_Slave))
-<BR><BR>[Stack]<UL><LI>Max Depth = 312<LI>Call Chain = ModbusRTU_Slave &rArr; FLASH_WritePage &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
+<P><STRONG><a name="[90]"></a>ModbusRTU_Slave</STRONG> (Thumb, 390 bytes, Stack size 112 bytes, uart_modbus_rtu.o(i.ModbusRTU_Slave))
+<BR><BR>[Stack]<UL><LI>Max Depth = 216<LI>Call Chain = ModbusRTU_Slave &rArr; FLASH_WritePage &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[4a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Receive_IT
 <LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_WritePin
@@ -881,7 +881,7 @@ Global Symbols
 <LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Packing_Frame
 <LI><a href="#[4b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;FLASH_WritePage
 <LI><a href="#[80]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Transmit
-<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Response_Error_CRC
+<LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Response_Error
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModRTU_Slave_ACK_Write_Frame
 <LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModRTU_Slave_ACK_Read_Frame
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModRTU_CRC
@@ -906,8 +906,8 @@ Global Symbols
 <P><STRONG><a name="[a]"></a>PendSV_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32l0xx_it.o(i.PendSV_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32l011xx.o(RESET)
 </UL>
-<P><STRONG><a name="[92]"></a>Response_Error_CRC</STRONG> (Thumb, 20 bytes, Stack size 8 bytes, user_modbus_rtu.o(i.Response_Error_CRC))
-<BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = Response_Error_CRC
+<P><STRONG><a name="[92]"></a>Response_Error</STRONG> (Thumb, 20 bytes, Stack size 8 bytes, user_modbus_rtu.o(i.Response_Error))
+<BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = Response_Error
 </UL>
 <BR>[Called By]<UL><LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ModbusRTU_Slave
 </UL>
@@ -915,7 +915,7 @@ Global Symbols
 <P><STRONG><a name="[9]"></a>SVC_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32l0xx_it.o(i.SVC_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32l011xx.o(RESET)
 </UL>
-<P><STRONG><a name="[48]"></a>Send_Error</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Error))
+<P><STRONG><a name="[48]"></a>Send_Error</STRONG> (Thumb, 76 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Error))
 <BR><BR>[Stack]<UL><LI>Max Depth = 112<LI>Call Chain = Send_Error &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_WritePin
@@ -925,7 +925,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
-<P><STRONG><a name="[44]"></a>Send_Slave_IF</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Slave_IF))
+<P><STRONG><a name="[44]"></a>Send_Slave_IF</STRONG> (Thumb, 76 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Slave_IF))
 <BR><BR>[Stack]<UL><LI>Max Depth = 112<LI>Call Chain = Send_Slave_IF &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_WritePin
@@ -935,7 +935,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[41]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;AT_Command_IF
 </UL>
 
-<P><STRONG><a name="[45]"></a>Send_Success</STRONG> (Thumb, 64 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Success))
+<P><STRONG><a name="[45]"></a>Send_Success</STRONG> (Thumb, 76 bytes, Stack size 16 bytes, uart_modbus_rtu.o(i.Send_Success))
 <BR><BR>[Stack]<UL><LI>Max Depth = 112<LI>Call Chain = Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_WritePin
@@ -968,8 +968,10 @@ Global Symbols
 <P><STRONG><a name="[1f]"></a>SystemInit</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, system_stm32l0xx.o(i.SystemInit))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32l011xx.o(.text)
 </UL>
-<P><STRONG><a name="[47]"></a>Terminal_Receive</STRONG> (Thumb, 192 bytes, Stack size 0 bytes, uart_modbus_rtu.o(i.Terminal_Receive))
-<BR><BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
+<P><STRONG><a name="[47]"></a>Terminal_Receive</STRONG> (Thumb, 256 bytes, Stack size 12 bytes, uart_modbus_rtu.o(i.Terminal_Receive))
+<BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = Terminal_Receive
+</UL>
+<BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Change_Baudrate_AddrSlave
 </UL>
 
 <P><STRONG><a name="[7b]"></a>UART_AdvFeatureConfig</STRONG> (Thumb, 202 bytes, Stack size 8 bytes, stm32l0xx_hal_uart.o(i.UART_AdvFeatureConfig))
@@ -1045,8 +1047,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_SetConfig
 </UL>
 
-<P><STRONG><a name="[2e]"></a>main</STRONG> (Thumb, 334 bytes, Stack size 24 bytes, main.o(i.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 336<LI>Call Chain = main &rArr; ModbusRTU_Slave &rArr; FLASH_WritePage &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
+<P><STRONG><a name="[2e]"></a>main</STRONG> (Thumb, 336 bytes, Stack size 24 bytes, main.o(i.main))
+<BR><BR>[Stack]<UL><LI>Max Depth = 248<LI>Call Chain = main &rArr; Change_Baudrate_AddrSlave &rArr; AT_Command_IF &rArr; Send_Success &rArr; HAL_UART_Transmit &rArr; UART_WaitOnFlagUntilTimeout &rArr; UART_EndRxTransfer
 </UL>
 <BR>[Calls]<UL><LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Init
 <LI><a href="#[9c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_IWDG_Refresh
