@@ -157,8 +157,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		uint32_t check_gettick = HAL_GetTick() - GetTick_Ms;
-		if(check_gettick > TIME_SAMPLING) 
+		if(HAL_GetTick() - GetTick_Ms > TIME_SAMPLING) 
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&tem, (int16_t*)&humi)==1)
 			{

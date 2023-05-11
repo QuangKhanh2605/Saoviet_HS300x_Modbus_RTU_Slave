@@ -23,7 +23,7 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *ba
 		sFrame.Data_a8 = frame;
 		uint16_t CRC_rx = rx_uart->sim_rx[rx_uart->countBuffer-1] << 8 | rx_uart->sim_rx[rx_uart->countBuffer-2];
 		uint16_t CRC_check = ModRTU_CRC(&rx_uart->sim_rx[0], rx_uart->countBuffer-2);
-		uint8_t FunCode=rx_uart->sim_rx[1];
+		uint8_t FunCode = rx_uart->sim_rx[1];
 		if(CRC_check == CRC_rx)
 		{
 			uint16_t addr_data = rx_uart->sim_rx[2] << 8 | rx_uart->sim_rx[3];
@@ -352,8 +352,7 @@ void Get_Length_Variable(uint8_t *length, uint32_t variable)
 
 int8_t Terminal_Receive(UART_BUFFER *rx_uart)
 {
-	uint16_t i=0;
-	
+	uint8_t i=0;
 	if(rx_uart->sim_rx[i] == 'A' && rx_uart->sim_rx[i+1] == 'T') i=i+2;
 	else return 0;
 	

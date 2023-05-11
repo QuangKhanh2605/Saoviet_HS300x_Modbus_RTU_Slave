@@ -6,7 +6,7 @@ uint16_t State_systick_countBuffer_uart=0;
 
 int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 {
-	uint16_t answer=0;
+	uint8_t answer=0;
 	if(rx_uart->countBuffer > 0)
 	{
 		if(State_systick_countBuffer_uart == 0 )
@@ -21,7 +21,6 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *rx_uart)
 			if(check_countBuffer_uart == rx_uart->countBuffer)
 			{
 				answer = 1;
-				//State_systick_countBuffer_uart1 = 0;
 			}
 			else
 			{
