@@ -28,7 +28,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define NUMBER_OF_REGISTER 8
 #define TIME_SAMPLING      500
 /* USER CODE END PTD */
 
@@ -68,7 +67,6 @@ uint32_t baud_rate      = 115200;
 uint8_t  addr_stm32l0xx = 26;
 
 uint8_t check_complete_read_sensor=0;
-uint8_t address=0;
 
 //uint16_t addr_baud_rate        = 0x01;
 
@@ -129,7 +127,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-//	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
 //	for(int i=1;i<128;i++)
 //	{
 //		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
