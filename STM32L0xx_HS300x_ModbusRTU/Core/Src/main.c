@@ -98,7 +98,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
-
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -141,7 +140,6 @@ int main(void)
 		baud_rate      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+8); 
 		drop_tem       = FLASH_ReadData32(FLASH_STARTPAGE_DATA+12); 
 		drop_humi      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+16); 
-		
 	}
 	Uart2_Init(&sUart2, baud_rate);
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
@@ -170,7 +168,7 @@ int main(void)
 		{
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
-				Change_Baudrate_AddrSlave(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
+				Change_Baudrate_AddrSlave_Calib(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
 				ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi);
 				Delete_Buffer(&sUart2);
 			}

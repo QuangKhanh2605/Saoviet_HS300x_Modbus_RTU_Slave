@@ -16,7 +16,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 {
 	if(sUart2->sim_rx[0] == *addr_stm32l0xx)
 	{
-		uint8_t frame[30]={0}; 
+		uint8_t frame[25]={0}; 
 		sData sFrame;
 		sFrame.Data_a8 = frame;
 		uint16_t CRC_rx = sUart2->sim_rx[sUart2->countBuffer-1] << 8 | sUart2->sim_rx[sUart2->countBuffer-2];
@@ -25,7 +25,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 		if(CRC_check == CRC_rx)
 		{
 			uint16_t addr_data = sUart2->sim_rx[2] << 8 | sUart2->sim_rx[3];
-			uint8_t data_frame[20]={0};
+			uint8_t data_frame[16]={0};
 			if(FunCode == 0x03)
 			{
 				if(tem != 0xFF && humi !=0xFF)
@@ -47,6 +47,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 					else
 					{
 						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 				}
 				else
@@ -59,7 +60,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 				if(addr_data == 0x0000)
 				{
 					int16_t addr = sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5];
-					if(addr >= 0 && addr <= 255)
+					if(addr > 0 && addr <= 255)
 					{
 						*addr_stm32l0xx = addr;
 						FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, drop_tem, drop_humi);
@@ -73,8 +74,8 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 				
 				else if(addr_data == 0x0001)
 				{
-					int8_t tmp_baud_rate = sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5];
-					if(tmp_baud_rate>=0 && tmp_baud_rate <=7)
+					int16_t tmp_baud_rate = sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5];
+					if(tmp_baud_rate >= 0 && tmp_baud_rate <= 7)
 					{
 						*baud_rate = baud_rate_value[tmp_baud_rate];
 						Uart2_Init(sUart2, *baud_rate);
@@ -107,7 +108,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 	}
 }
 
-void Change_Baudrate_AddrSlave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
+void Change_Baudrate_AddrSlave_Calib(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
 {
 	int8_t receive_ctrl=0;
 	receive_ctrl = Terminal_Receive(sUart2);
