@@ -288,7 +288,7 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	i += 3 + length_addr; j = i - 1;
 	while(length_addr > 0)
 	{
-		Slave_IF[j] = (addr_stm32l0xx % 10) + 48;
+		Slave_IF[j] = (addr_stm32l0xx % 10) + ASCII_NUMBER_VALUE;
 		addr_stm32l0xx = addr_stm32l0xx /10;
 		length_addr--;
 		j--;
@@ -297,7 +297,7 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	
 	while(length_baud_rate > 0)
 	{
-		Slave_IF[j] = (baud_rate % 10) + 48;
+		Slave_IF[j] = (baud_rate % 10) + ASCII_NUMBER_VALUE;
 		baud_rate = baud_rate /10;
 		length_baud_rate--;
 		j--;
@@ -310,7 +310,7 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	i += 2 + length_drop_tem; j = i - 1;
 	while(length_drop_tem > 0)
 	{
-		Slave_IF[j] = (stamp_drop_tem % 10) + 48;
+		Slave_IF[j] = (stamp_drop_tem % 10) + ASCII_NUMBER_VALUE;
 		stamp_drop_tem = stamp_drop_tem /10;
 		length_drop_tem--;
 		j--;
@@ -323,7 +323,7 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	i += 2 + length_drop_humi; j = i - 1;
 	while(length_drop_humi > 0)
 	{
-		Slave_IF[j] = (stamp_drop_humi % 10) + 48;
+		Slave_IF[j] = (stamp_drop_humi % 10) + ASCII_NUMBER_VALUE;
 		stamp_drop_humi = stamp_drop_humi /10;
 		length_drop_humi--;
 		j--;
