@@ -98,8 +98,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
-int16_t c=0x8000;
-int16_t a=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -169,7 +167,6 @@ int main(void)
 				check_complete_read_sensor = MAX_READ_SENSOR_RETURN_NULL;
 			}
 			GetTick_Ms = HAL_GetTick();
-			if(c == (int16_t)0x8000) a++;
 		}
 		
 		if(check_complete_read_sensor == MAX_READ_SENSOR_RETURN_NULL)
