@@ -50,8 +50,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
-int16_t tem=0;
-int16_t humi=0;
+int16_t tem=0x7FFF;
+int16_t humi=0x7FFF;
 
 int16_t drop_tem=0;
 int16_t drop_humi=0;
@@ -98,6 +98,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
+int16_t c=0x8000;
+int16_t a=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -156,15 +158,21 @@ int main(void)
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&tem, (int16_t*)&humi)==1)
 			{
-				tem=0xFF; 
-				humi=0xFF;
+				tem=0x7FFF; 
+				humi=0x7FFF;
 			}
 			tem  = tem  + drop_tem;
 			humi = humi + drop_humi;
-			check_complete_read_sensor=1;
+			check_complete_read_sensor++;
+			if(check_complete_read_sensor >= MAX_READ_SENSOR_RETURN_NULL) 
+			{
+				check_complete_read_sensor = MAX_READ_SENSOR_RETURN_NULL;
+			}
 			GetTick_Ms = HAL_GetTick();
+			if(c == (int16_t)0x8000) a++;
 		}
-		if(check_complete_read_sensor == 1)
+		
+		if(check_complete_read_sensor == MAX_READ_SENSOR_RETURN_NULL)
 		{
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{

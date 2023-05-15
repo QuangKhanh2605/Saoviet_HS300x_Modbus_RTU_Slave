@@ -15,14 +15,13 @@
  * Variables
  ******************************************************************************/
 
-extern uint32_t RT_Count_Systick_u32;
+//extern uint32_t RT_Count_Systick_u32;
 uint8_t Number_Error_HS300X_u8 = 0;
 // uint8_t dataTest[16] = {0x00};
 // uint8_t DRDY_INTflag = 0;
 /*******************************************************************************
  * Code
  ******************************************************************************/
-float division = 16383.00;
  
 /* USER CODE BEGIN 2 */
 /* This function call after 10ms HS300x resart */
@@ -127,8 +126,8 @@ uint8_t HS300X_Start_Measurement(I2C_HandleTypeDef *hi2c_x, int16_t *temperature
             temp_x = ((receive_data[2] << 8) | receive_data[3]);
             humi_x = humi_x & 0x3FFFU;
             temp_x = ((temp_x >> 2) & 0xFFFFU);
-            *humidity = (int16_t)((humi_x / division) * 100);
-            *temperature = (int16_t)((((temp_x / division) * 165) - 40) * 100);
+            *humidity = (int16_t)((humi_x / (float)16383.00) * 100);
+            *temperature = (int16_t)((((temp_x / (float)16383.00) * 165) - 40) * 100);
             if (Number_Error_HS300X_u8 != 0)
             {
                 Number_Error_HS300X_u8 = 0;
@@ -143,8 +142,8 @@ uint8_t HS300X_Start_Measurement(I2C_HandleTypeDef *hi2c_x, int16_t *temperature
         }
         else
         {
-            *temperature = 0;
-            *humidity = 0;
+            *temperature = 0x7FFF;
+            *humidity = 0x7FFF;
         }
     }
     return reVal;

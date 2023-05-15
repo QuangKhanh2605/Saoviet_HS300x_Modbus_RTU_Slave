@@ -28,7 +28,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 			uint8_t data_frame[16]={0};
 			if(FunCode == 0x03)
 			{
-				if(tem != 0xFF && humi !=0xFF)
+				if(tem != 0x7FFF && humi !=0x7FFF)
 				{
 					if(addr_data <= 0x07)
 					{
@@ -52,7 +52,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 				}
 				else
 				{
-					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C);
+					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C_OR_SENSOR);
 				}
 			}
 			else if(FunCode == 0x06)
