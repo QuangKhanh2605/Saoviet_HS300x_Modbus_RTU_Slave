@@ -13,7 +13,7 @@ typedef struct
 #define ERROR_CODE_CHECK_CRC            0x01
 #define ERROR_CODE_FUNCTION_CODE        0x02
 #define ERROR_CODE_ADDRESS_OR_QUANTITY  0x03
-#define ERROR_CODE_I2C                  0x04
+#define ERROR_CODE_I2C_OR_SENSOR        0x04
 
 /*======================== Define ======================*/
 

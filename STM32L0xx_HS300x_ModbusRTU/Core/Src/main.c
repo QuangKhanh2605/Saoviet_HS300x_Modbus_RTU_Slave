@@ -28,7 +28,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define NUMBER_OF_REGISTER 8
 #define TIME_SAMPLING      500
 /* USER CODE END PTD */
 
@@ -51,8 +50,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
-int16_t tem=0;
-int16_t humi=0;
+int16_t tem=0x7FFF;
+int16_t humi=0x7FFF;
 
 int16_t drop_tem=0;
 int16_t drop_humi=0;
@@ -68,7 +67,6 @@ uint32_t baud_rate      = 115200;
 uint8_t  addr_stm32l0xx = 26;
 
 uint8_t check_complete_read_sensor=0;
-uint8_t address=0;
 
 //uint16_t addr_baud_rate        = 0x01;
 
@@ -100,7 +98,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
-
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -129,7 +126,6 @@ int main(void)
   MX_USART2_UART_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
-//	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
 //	for(int i=1;i<128;i++)
 //	{
 //		if(HAL_I2C_IsDeviceReady(&hi2c1, i<<1, 5,5) == HAL_OK)
@@ -144,7 +140,6 @@ int main(void)
 		baud_rate      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+8); 
 		drop_tem       = FLASH_ReadData32(FLASH_STARTPAGE_DATA+12); 
 		drop_humi      = FLASH_ReadData32(FLASH_STARTPAGE_DATA+16); 
-		
 	}
 	Uart2_Init(&sUart2, baud_rate);
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
@@ -157,24 +152,28 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		uint32_t check_gettick = HAL_GetTick() - GetTick_Ms;
-		if(check_gettick > TIME_SAMPLING) 
+		if(HAL_GetTick() - GetTick_Ms > TIME_SAMPLING) 
 		{
 			if(HS300X_Start_Measurement(&hi2c1, (int16_t*)&tem, (int16_t*)&humi)==1)
 			{
-				tem=0xFF; 
-				humi=0xFF;
+				tem=0x7FFF; 
+				humi=0x7FFF;
 			}
 			tem  = tem  + drop_tem;
 			humi = humi + drop_humi;
-			check_complete_read_sensor=1;
+			check_complete_read_sensor++;
+			if(check_complete_read_sensor >= MAX_READ_SENSOR_RETURN_NULL) 
+			{
+				check_complete_read_sensor = MAX_READ_SENSOR_RETURN_NULL;
+			}
 			GetTick_Ms = HAL_GetTick();
 		}
-		if(check_complete_read_sensor == 1)
+		
+		if(check_complete_read_sensor == MAX_READ_SENSOR_RETURN_NULL)
 		{
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
-				Change_Baudrate_AddrSlave(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
+				Change_Baudrate_AddrSlave_Calib(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
 				ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi);
 				Delete_Buffer(&sUart2);
 			}

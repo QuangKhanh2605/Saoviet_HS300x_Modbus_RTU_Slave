@@ -220,7 +220,7 @@ uint8_t ModRTU_Slave_ACK_Read_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t F
     pFrame->Data_a8[Count++] = LengthRegis * 2;
     //n byte data
     for(i = 0; i < (LengthRegis * 2); i++)
-        pFrame->Data_a8[Count++] = *(aData + i);
+    pFrame->Data_a8[Count++] = *(aData + i);
     
     //Tinh 2 byte Crc
     crc = ModRTU_CRC(&pFrame->Data_a8[0],Count); 
@@ -284,6 +284,7 @@ uint8_t ModRTU_Slave_ACK_Write_Frame (sData *pFrame, uint8_t AddrSlave, uint8_t 
 
 void Response_Error(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Error_Code)
 {
+	uint16_t crc;
 	uint16_t Count = 0;
 	
 	// Ðong goi frame
@@ -293,6 +294,12 @@ void Response_Error(sData *pFrame, uint8_t Address, uint8_t FunCode, uint8_t Err
   pFrame->Data_a8[Count++] = FunCode;
 	//1 byte Error Code
   pFrame->Data_a8[Count++] = Error_Code;
+	
+	//Tinh 2 byte Crc
+	crc = ModRTU_CRC(&pFrame->Data_a8[0],Count); 
+	//them 2 byte crc
+	pFrame->Data_a8[Count++] = (uint8_t) (crc & 0xFF);
+	pFrame->Data_a8[Count++] = (uint8_t) (crc>>8) & 0xFF;
 	
 	pFrame->Length_u16 = Count;
 }

@@ -6,36 +6,33 @@ char error[]="ERROR";
 char Slave_IF[21];
 
 void Get_Length_Variable(uint8_t *length, uint32_t variable);
-int8_t Terminal_Receive(UART_BUFFER *rx_uart);
-void Send_Success(UART_BUFFER *rx_uart);
-void Send_Error(UART_BUFFER *rx_uart);
-void Send_Slave_IF(UART_BUFFER *rx_uart);
+int8_t Terminal_Receive(UART_BUFFER *sUart2);
+void Send_Data_Terminal(UART_BUFFER *sUart2, void *data);
 
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi);
-void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
+void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
 
-void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
+void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
 {
-	if(rx_uart->sim_rx[0] == *addr_stm32l0xx)
+	if(sUart2->sim_rx[0] == *addr_stm32l0xx)
 	{
-		uint8_t frame[30]={0}; 
+		uint8_t frame[25]={0}; 
 		sData sFrame;
 		sFrame.Data_a8 = frame;
-		uint16_t CRC_rx = rx_uart->sim_rx[rx_uart->countBuffer-1] << 8 | rx_uart->sim_rx[rx_uart->countBuffer-2];
-		uint16_t CRC_check = ModRTU_CRC(&rx_uart->sim_rx[0], rx_uart->countBuffer-2);
-		uint8_t FunCode=rx_uart->sim_rx[1];
+		uint16_t CRC_rx = sUart2->sim_rx[sUart2->countBuffer-1] << 8 | sUart2->sim_rx[sUart2->countBuffer-2];
+		uint16_t CRC_check = ModRTU_CRC(&sUart2->sim_rx[0], sUart2->countBuffer-2);
+		uint8_t FunCode = sUart2->sim_rx[1];
 		if(CRC_check == CRC_rx)
 		{
-			uint16_t addr_data = rx_uart->sim_rx[2] << 8 | rx_uart->sim_rx[3];
-			uint16_t length_register = rx_uart->sim_rx[4] << 8 | rx_uart->sim_rx[5];
-			length_register = length_register*2;
-			uint8_t data_frame[20]={0};
+			uint16_t addr_data = sUart2->sim_rx[2] << 8 | sUart2->sim_rx[3];
+			uint8_t data_frame[16]={0};
 			if(FunCode == 0x03)
 			{
-				if(tem != 0xFF && humi !=0xFF)
+				if(tem != 0x7FFF && humi !=0x7FFF)
 				{
 					if(addr_data <= 0x07)
 					{
+						uint16_t length_register = (sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5])*2;
 						uint8_t length_check = (8 - addr_data) * 2;
 						if(length_register >= 1 && length_register <= length_check)
 						{
@@ -50,19 +47,19 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *ba
 					else
 					{
 						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
+						Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_ADDRESS_OR_QUANTITY);
 					}
 				}
 				else
 				{
-					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C);
+					Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_I2C_OR_SENSOR);
 				}
 			}
 			else if(FunCode == 0x06)
 			{
 				if(addr_data == 0x0000)
 				{
-					
-					uint8_t addr = rx_uart->sim_rx[4] << 8 | rx_uart->sim_rx[5];
+					int16_t addr = sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5];
 					if(addr > 0 && addr <= 255)
 					{
 						*addr_stm32l0xx = addr;
@@ -77,12 +74,12 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *ba
 				
 				else if(addr_data == 0x0001)
 				{
-					uint16_t tmp_baud_rate = rx_uart->sim_rx[4] << 8 | rx_uart->sim_rx[5];
-					if(tmp_baud_rate >0 && tmp_baud_rate <=7)
+					int16_t tmp_baud_rate = sUart2->sim_rx[4] << 8 | sUart2->sim_rx[5];
+					if(tmp_baud_rate >= 0 && tmp_baud_rate <= 7)
 					{
 						*baud_rate = baud_rate_value[tmp_baud_rate];
-						Uart2_Init(rx_uart, *baud_rate);
-						HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
+						Uart2_Init(sUart2, *baud_rate);
+						HAL_UART_Receive_IT(sUart2->huart,&sUart2->buffer,1);
 						FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, drop_tem, drop_humi);
 						ModRTU_Slave_ACK_Write_Frame(&sFrame, *addr_stm32l0xx, FunCode, addr_data, 1, data_frame);
 					}
@@ -106,66 +103,66 @@ void ModbusRTU_Slave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *ba
 			Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_CHECK_CRC);
 		}
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-		HAL_UART_Transmit(rx_uart->huart, sFrame.Data_a8, sFrame.Length_u16, 1000);
+		HAL_UART_Transmit(sUart2->huart, sFrame.Data_a8, sFrame.Length_u16, 1000);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 	}
 }
 
-void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
+void Change_Baudrate_AddrSlave_Calib(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
 {
 	int8_t receive_ctrl=0;
-	receive_ctrl = Terminal_Receive(rx_uart);
+	receive_ctrl = Terminal_Receive(sUart2);
 	if(receive_ctrl == -1)
 	{
-		Send_Error(rx_uart);
+		Send_Data_Terminal(sUart2, error);
 	}
 	
 	if(receive_ctrl == 1)
 	{
 		*addr_stm32l0xx = 0x1A;
 		*baud_rate=115200;
-		Send_Success(rx_uart);
+		Send_Data_Terminal(sUart2, success);
 		
-		Uart2_Init(rx_uart, *baud_rate);
-		HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
+		Uart2_Init(sUart2, *baud_rate);
+		HAL_UART_Receive_IT(sUart2->huart,&sUart2->buffer,1);
 		FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 	}
 	if(receive_ctrl == -2)
 	{
-		AT_Command_IF(rx_uart, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
+		AT_Command_IF(sUart2, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 	}
 	
 	if(receive_ctrl == 2)
 	{
 		uint8_t i=6;
 		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9')
+		while( sUart2->sim_rx[i] >= '0' && sUart2->sim_rx[i] <= '9')
 		{
 			i++;
 			count++;
-			if(i == rx_uart->countBuffer) break;
+			if(i == sUart2->countBuffer) break;
 		}
 		i--;
 		if(count >0 && count <=3)
 		{
 			uint16_t tmp=0;
-			if(count == 1) tmp = (rx_uart->sim_rx[i] -48);
-			if(count == 2) tmp = (rx_uart->sim_rx[i] -48) + (rx_uart->sim_rx[i-1] -48)*10 ;
-			if(count == 3) tmp = (rx_uart->sim_rx[i] -48) + (rx_uart->sim_rx[i-1] -48)*10 + (rx_uart->sim_rx[i-2] -48)*100;
+			if(count == 1) tmp = (sUart2->sim_rx[i] -48);
+			if(count == 2) tmp = (sUart2->sim_rx[i] -48) + (sUart2->sim_rx[i-1] -48)*10 ;
+			if(count == 3) tmp = (sUart2->sim_rx[i] -48) + (sUart2->sim_rx[i-1] -48)*10 + (sUart2->sim_rx[i-2] -48)*100;
 			if(tmp > 0 && tmp <= 255)
 			{
 				*addr_stm32l0xx = tmp;
-				Send_Success(rx_uart);
+				Send_Data_Terminal(sUart2, success);
 				FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 			}
 			else
 			{
-				Send_Error(rx_uart);
+				Send_Data_Terminal(sUart2, error);
 			}
 		}
 		else
 		{
-			Send_Error(rx_uart);
+			Send_Data_Terminal(sUart2, error);
 		}
 	}
 	
@@ -173,26 +170,26 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	{
 		uint8_t i=6;
 		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '7')
+		while( sUart2->sim_rx[i] >= '0' && sUart2->sim_rx[i] <= '7')
 		{
 			i++;
 			count++;
-			if(i == rx_uart->countBuffer) break;
+			if(i == sUart2->countBuffer) break;
 		}
 		i--;
 		if(count == 1)
 		{
-			uint8_t tmp = rx_uart->sim_rx[i] - 48;
+			uint8_t tmp = sUart2->sim_rx[i] - 48;
 			*baud_rate=baud_rate_value[tmp];
-			Send_Success(rx_uart);
+			Send_Data_Terminal(sUart2, success);
 			
-			Uart2_Init(rx_uart, *baud_rate);
-			HAL_UART_Receive_IT(rx_uart->huart,&rx_uart->buffer,1);
+			Uart2_Init(sUart2, *baud_rate);
+			HAL_UART_Receive_IT(sUart2->huart,&sUart2->buffer,1);
 			FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 		}
 		else
 		{
-			Send_Error(rx_uart);
+			Send_Data_Terminal(sUart2, error);
 		}
 	}
 	
@@ -200,20 +197,20 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	{
 		uint8_t i=8;
 		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9')
+		while( sUart2->sim_rx[i] >= '0' && sUart2->sim_rx[i] <= '9')
 		{
 			i++;
 			count++;
-			if(i == rx_uart->countBuffer) break;
+			if(i == sUart2->countBuffer) break;
 		}
 		i--;
 		
 		if(count >0 && count <=3)
 		{
 			uint16_t tmp=0;
-			if(count == 1) tmp = (rx_uart->sim_rx[i] -48);
-			if(count == 2) tmp = (rx_uart->sim_rx[i] -48) + (rx_uart->sim_rx[i-1] -48)*10 ;
-			if(count == 3) tmp = (rx_uart->sim_rx[i] -48) + (rx_uart->sim_rx[i-1] -48)*10 + (rx_uart->sim_rx[i-2] -48)*100;
+			if(count == 1) tmp = (sUart2->sim_rx[i] -48);
+			if(count == 2) tmp = (sUart2->sim_rx[i] -48) + (sUart2->sim_rx[i-1] -48)*10 ;
+			if(count == 3) tmp = (sUart2->sim_rx[i] -48) + (sUart2->sim_rx[i-1] -48)*10 + (sUart2->sim_rx[i-2] -48)*100;
 			if(receive_ctrl == 4)
 			{
 				*drop_tem = tmp;
@@ -222,12 +219,12 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 			{
 				*drop_tem = 0 - tmp;
 			}
-			Send_Success(rx_uart);
+			Send_Data_Terminal(sUart2, success);
 			FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 		}
 		else
 		{
-			Send_Error(rx_uart);
+			Send_Data_Terminal(sUart2, error);
 		}
 	}
 	
@@ -235,17 +232,17 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 	{
 		uint8_t i=8;
 		uint8_t count=0;
-		while( rx_uart->sim_rx[i] >= '0' && rx_uart->sim_rx[i] <= '9')
+		while( sUart2->sim_rx[i] >= '0' && sUart2->sim_rx[i] <= '9')
 		{
 			i++;
 			count++;
-			if(i == rx_uart->countBuffer) break;
+			if(i == sUart2->countBuffer) break;
 		}
 		i--;
 		if(count == 1)
 		{
 			uint8_t tmp=0;
-			tmp = (rx_uart->sim_rx[i] -48);
+			tmp = (sUart2->sim_rx[i] -48);
 			if(receive_ctrl == 5)
 			{
 				*drop_humi = tmp;
@@ -255,17 +252,17 @@ void Change_Baudrate_AddrSlave(UART_BUFFER *rx_uart, uint8_t *addr_stm32l0xx, ui
 				*drop_humi = 0 - tmp;
 			}
 			
-			Send_Success(rx_uart);
+			Send_Data_Terminal(sUart2, success);
 			FLASH_WritePage(0xA5, *addr_stm32l0xx, *baud_rate, *drop_tem, *drop_humi);
 		}
 		else
 		{
-			Send_Error(rx_uart);
+			Send_Data_Terminal(sUart2, error);
 		}
 	}
 }
 
-void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi)
+void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi)
 {
 	uint8_t i=0;
 	uint8_t j=0;
@@ -291,7 +288,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 	i += 3 + length_addr; j = i - 1;
 	while(length_addr > 0)
 	{
-		Slave_IF[j] = (addr_stm32l0xx % 10) + 48;
+		Slave_IF[j] = (addr_stm32l0xx % 10) + ASCII_NUMBER_VALUE;
 		addr_stm32l0xx = addr_stm32l0xx /10;
 		length_addr--;
 		j--;
@@ -300,7 +297,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 	
 	while(length_baud_rate > 0)
 	{
-		Slave_IF[j] = (baud_rate % 10) + 48;
+		Slave_IF[j] = (baud_rate % 10) + ASCII_NUMBER_VALUE;
 		baud_rate = baud_rate /10;
 		length_baud_rate--;
 		j--;
@@ -313,7 +310,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 	i += 2 + length_drop_tem; j = i - 1;
 	while(length_drop_tem > 0)
 	{
-		Slave_IF[j] = (stamp_drop_tem % 10) + 48;
+		Slave_IF[j] = (stamp_drop_tem % 10) + ASCII_NUMBER_VALUE;
 		stamp_drop_tem = stamp_drop_tem /10;
 		length_drop_tem--;
 		j--;
@@ -326,7 +323,7 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 	i += 2 + length_drop_humi; j = i - 1;
 	while(length_drop_humi > 0)
 	{
-		Slave_IF[j] = (stamp_drop_humi % 10) + 48;
+		Slave_IF[j] = (stamp_drop_humi % 10) + ASCII_NUMBER_VALUE;
 		stamp_drop_humi = stamp_drop_humi /10;
 		length_drop_humi--;
 		j--;
@@ -337,8 +334,8 @@ void AT_Command_IF(UART_BUFFER *rx_uart, uint8_t addr_stm32l0xx, uint32_t baud_r
 		i++;
 	}
 	
-	Send_Slave_IF(rx_uart);
-	Send_Success(rx_uart);
+	Send_Data_Terminal(sUart2, Slave_IF);
+	Send_Data_Terminal(sUart2, success);
 }
 
 void Get_Length_Variable(uint8_t *length, uint32_t variable)
@@ -350,78 +347,77 @@ void Get_Length_Variable(uint8_t *length, uint32_t variable)
 	}
 }
 
-int8_t Terminal_Receive(UART_BUFFER *rx_uart)
+int8_t Terminal_Receive(UART_BUFFER *sUart2)
 {
-	uint16_t i=0;
-	
-	if(rx_uart->sim_rx[i] == 'A' && rx_uart->sim_rx[i+1] == 'T') i=i+2;
+	uint8_t i=0;
+	if(sUart2->sim_rx[i] == 'A' && sUart2->sim_rx[i+1] == 'T') i=i+2;
 	else return 0;
 	
-	if(rx_uart->sim_rx[i] == '+') i++;
+	if(sUart2->sim_rx[i] == '+') i++;
 	else return -1;
 	
-	if(rx_uart->sim_rx[i] == 'R' && rx_uart->sim_rx[i+1] == 'E' && rx_uart->sim_rx[i+2] == 'S' && rx_uart->sim_rx[i+3] == 'E' && rx_uart->sim_rx[i+4] == 'T') 
+	if(sUart2->sim_rx[i] == 'R' && sUart2->sim_rx[i+1] == 'E' && sUart2->sim_rx[i+2] == 'S' && sUart2->sim_rx[i+3] == 'E' && sUart2->sim_rx[i+4] == 'T') 
 	{
-		if(i+5 == rx_uart->countBuffer) return 1;
+		if(i+5 == sUart2->countBuffer) return 1;
 		else
 		{
-			while(i+5 < rx_uart->countBuffer)
+			while(i+5 < sUart2->countBuffer)
 			{
-				if(rx_uart->sim_rx[i+5] >32) return -1;
+				if(sUart2->sim_rx[i+5] >32) return -1;
 				i++;
 			}
 			return 1;
 		}
 	}
 	
-	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'D')
+	if(sUart2->sim_rx[i] == 'I' && sUart2->sim_rx[i+1] == 'D')
 	{
 		i=i+2;
-		if(rx_uart->sim_rx[i] == '=') return 2;
+		if(sUart2->sim_rx[i] == '=') return 2;
 		return -1;
 	}
-	if(rx_uart->sim_rx[i] == 'I' && rx_uart->sim_rx[i+1] == 'F' && rx_uart->sim_rx[i+2] == '?') 
+	if(sUart2->sim_rx[i] == 'I' && sUart2->sim_rx[i+1] == 'F' && sUart2->sim_rx[i+2] == '?') 
 	{
-		if(i+3 == rx_uart->countBuffer) return -2;
+		if(i+3 == sUart2->countBuffer) return -2;
 		else
 		{
-			while(i+3 < rx_uart->countBuffer)
+			while(i+3 < sUart2->countBuffer)
 			{
-				if(rx_uart->sim_rx[i+3] >32) return -1;
+				if(sUart2->sim_rx[i+3] >32) return -1;
 				i++;
 			}
 			return -2;
 		}
 	}
 	
-	if(rx_uart->sim_rx[i] == 'B' && rx_uart->sim_rx[i+1] == 'R')
+	if(sUart2->sim_rx[i] == 'B' && sUart2->sim_rx[i+1] == 'R')
 	{
 		i=i+2;
-		if(rx_uart->sim_rx[i] == '=') return 3;
+		if(sUart2->sim_rx[i] == '=') return 3;
 		return -1;
 	}
 	
-	if(rx_uart->sim_rx[i] == 'C' && rx_uart->sim_rx[i+1] == 'L' && rx_uart->sim_rx[i+2] == 'T')
+	if(sUart2->sim_rx[i] == 'C' && sUart2->sim_rx[i+1] == 'L' && sUart2->sim_rx[i+2] == 'T')
 	{
 		i=i+3;
-		if(rx_uart->sim_rx[i] == '=')
+		if(sUart2->sim_rx[i] == '=')
 		{
 			i=i+1;
-			if(rx_uart->sim_rx[i] == '+') return 4;
-			if(rx_uart->sim_rx[i] == '-') return -4;
+			if(sUart2->sim_rx[i] == '+') return 4;
+			if(sUart2->sim_rx[i] == '-') return -4;
 			return -1;
 		}
 		return -1;
 	}
 	
-	if(rx_uart->sim_rx[i] == 'C' && rx_uart->sim_rx[i+1] == 'L' && rx_uart->sim_rx[i+2] == 'H')
+	if(sUart2->sim_rx[i] == 'C' && sUart2->sim_rx[i+1] == 'L' && sUart2->sim_rx[i+2] == 'H')
 	{
 		i=i+3;
-		if(rx_uart->sim_rx[i] == '=')
+		if(sUart2->sim_rx[i] == '=')
 		{
 			i=i+1;
-			if(rx_uart->sim_rx[i] == '+') return 5;
-			if(rx_uart->sim_rx[i] == '-') return -5;
+			if(sUart2->sim_rx[i] == '+') return 5;
+			if(sUart2->sim_rx[i] == '-') return -5;
 			return -1;
 		}
 		return -1;
@@ -429,32 +425,15 @@ int8_t Terminal_Receive(UART_BUFFER *rx_uart)
 	return 0;
 }
 
-void Send_Slave_IF(UART_BUFFER *rx_uart)
+void Send_Data_Terminal(UART_BUFFER *sUart2, void *data)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)Slave_IF,(uint16_t)strlen(Slave_IF),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
+	HAL_UART_Transmit(sUart2->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
+	HAL_UART_Transmit(sUart2->huart,(uint8_t *)data,(uint16_t)strlen(data),1000);
+	HAL_UART_Transmit(sUart2->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);	
 }
 
-void Send_Success(UART_BUFFER *rx_uart)
-{
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)success,(uint16_t)strlen(success),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-}
-
-void Send_Error(UART_BUFFER *rx_uart)
-{
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)error,(uint16_t)strlen(error),1000);
-	HAL_UART_Transmit(rx_uart->huart,(uint8_t *)"\r\n",(uint16_t)strlen("\r\n"),1000);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-}
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi)
 {
 	uint8_t i=0;
@@ -533,19 +512,19 @@ void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_r
 	}
 }
 
-void Uart2_Init(UART_BUFFER *rx_uart, uint32_t baud_rate)
+void Uart2_Init(UART_BUFFER *sUart2, uint32_t baud_rate)
 {
-  rx_uart->huart->Instance = USART2;
-  rx_uart->huart->Init.BaudRate = baud_rate;
-  rx_uart->huart->Init.WordLength = UART_WORDLENGTH_8B;
-  rx_uart->huart->Init.StopBits = UART_STOPBITS_1;
-  rx_uart->huart->Init.Parity = UART_PARITY_NONE;
-  rx_uart->huart->Init.Mode = UART_MODE_TX_RX;
-  rx_uart->huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  rx_uart->huart->Init.OverSampling = UART_OVERSAMPLING_16;
-  rx_uart->huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  rx_uart->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(rx_uart->huart) != HAL_OK)
+  sUart2->huart->Instance = USART2;
+  sUart2->huart->Init.BaudRate = baud_rate;
+  sUart2->huart->Init.WordLength = UART_WORDLENGTH_8B;
+  sUart2->huart->Init.StopBits = UART_STOPBITS_1;
+  sUart2->huart->Init.Parity = UART_PARITY_NONE;
+  sUart2->huart->Init.Mode = UART_MODE_TX_RX;
+  sUart2->huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  sUart2->huart->Init.OverSampling = UART_OVERSAMPLING_16;
+  sUart2->huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  sUart2->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(sUart2->huart) != HAL_OK)
   {
     while(1);
   }
