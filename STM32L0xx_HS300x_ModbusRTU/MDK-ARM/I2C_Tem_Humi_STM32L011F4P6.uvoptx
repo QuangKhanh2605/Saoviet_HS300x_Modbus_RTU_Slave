@@ -193,22 +193,22 @@
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>count_main,0x0A</ItemText>
+          <ItemText>max,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>9</count>
           <WinNumber>1</WinNumber>
-          <ItemText>count_rtu,0x0A</ItemText>
+          <ItemText>sUart2,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>10</count>
           <WinNumber>1</WinNumber>
-          <ItemText>max,0x0A</ItemText>
+          <ItemText>count_main,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>11</count>
           <WinNumber>1</WinNumber>
-          <ItemText>sUart2,0x0A</ItemText>
+          <ItemText>count_rtu,0x0A</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>

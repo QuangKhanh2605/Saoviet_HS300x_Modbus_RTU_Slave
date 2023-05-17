@@ -30,6 +30,14 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *sUart)
 					check_countBuffer_uart = sUart->countBuffer;
 				}
 			}
+			else
+			{
+				if(check_countBuffer_uart != sUart->countBuffer)
+				{
+					Get_systick_countBuffer_uart = HAL_GetTick();
+					check_countBuffer_uart = sUart->countBuffer;
+				}
+			}
 		}
 	}
 	else

@@ -98,6 +98,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
   * @brief  The application entry point.
   * @retval int
   */
+	
+uint32_t getTick_check=0;
+uint16_t max=0;
+uint32_t count_main=0;
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -173,6 +177,10 @@ int main(void)
 		{ 
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
+				count_main++;
+				getTick_check = HAL_GetTick() - getTick_check;
+				if(getTick_check > max) max = getTick_check;
+				
 				Change_Baudrate_AddrSlave_Calib(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
 				ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi);
 				Delete_Buffer(&sUart2);
@@ -383,6 +391,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
   UNUSED(huart);
 	if(huart->Instance == huart2.Instance)
 	{
+		getTick_check = HAL_GetTick();
 		Check_CountBuffer_Complete_Uart(&sUart2);
 		if(sUart2.countBuffer < LENGTH_BUFFER_UART )
 		{
