@@ -50,8 +50,8 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint32_t GetTick_Ms=0;
-int16_t tem=0x7FFF;
-int16_t humi=0x7FFF;
+int16_t tem=0;
+int16_t humi=0;
 
 int16_t drop_tem=0;
 int16_t drop_humi=0;
@@ -101,7 +101,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -170,7 +170,7 @@ int main(void)
 		}
 		
 		if(check_complete_read_sensor == MAX_READ_SENSOR_RETURN_NULL)
-		{
+		{ 
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
 				Change_Baudrate_AddrSlave_Calib(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
@@ -381,13 +381,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   /* Prevent unused argument(s) compilation warning */
   UNUSED(huart);
-	
 	if(huart->Instance == huart2.Instance)
 	{
-		if(sUart2.countBuffer < LENGTH_BUFFER_UART)
+		Check_CountBuffer_Complete_Uart(&sUart2);
+		if(sUart2.countBuffer < LENGTH_BUFFER_UART )
 		{
-			sUart2.sim_rx[(sUart2.countBuffer)++]= sUart2.buffer;
-			if(sUart2.countBuffer == LENGTH_BUFFER_UART) sUart2.countBuffer = 0;
+			sUart2.sim_rx[(sUart2.countBuffer)++] = sUart2.buffer;
 		}
 		HAL_UART_Receive_IT(&huart2,&sUart2.buffer,1);
 	}

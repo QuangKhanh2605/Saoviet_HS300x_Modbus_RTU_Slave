@@ -15,17 +15,20 @@ int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *sUart)
 			check_countBuffer_uart = sUart->countBuffer;
 			State_systick_countBuffer_uart = 1;
 		}
-		
-		if(HAL_GetTick() - Get_systick_countBuffer_uart > COMPLETE_RECEIVE_UART_TIME_MS && State_systick_countBuffer_uart == 1)	
+		else
 		{
-			if(check_countBuffer_uart == sUart->countBuffer)
+			if(HAL_GetTick() - Get_systick_countBuffer_uart > COMPLETE_RECEIVE_UART_TIME_MS)	
 			{
-				answer = 1;
-			}
-			else
-			{
-				Get_systick_countBuffer_uart = HAL_GetTick();
-				check_countBuffer_uart = sUart->countBuffer;
+				if(check_countBuffer_uart == sUart->countBuffer)
+				{
+					//Get_systick_countBuffer_uart = HAL_GetTick();
+					answer = 1;
+				}
+				else
+				{
+					Get_systick_countBuffer_uart = HAL_GetTick();
+					check_countBuffer_uart = sUart->countBuffer;
+				}
 			}
 		}
 	}
@@ -45,7 +48,6 @@ void Delete_Buffer(UART_BUFFER *sUart)
 		sUart->sim_rx[i] = 0x00;
 	}
 }
-
 
 void Transmit_Data_Uart(UART_BUFFER *sUart, char* command)
 {
