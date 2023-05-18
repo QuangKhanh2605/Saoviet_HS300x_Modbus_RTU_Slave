@@ -117,7 +117,7 @@ uint8_t HS300X_Start_Measurement(I2C_HandleTypeDef *hi2c_x, int16_t *temperature
          *     14        33.90
          *                      */
         /* wait sensor wake up */
-        HAL_Delay(50);
+        HAL_Delay(34);
         /* Read temperature and humidity */
         reVal = HAL_I2C_Master_Receive(hi2c_x, HS300X_SENSON_ADDR << 1, receive_data, 4, 1000);
         if (HAL_OK == reVal)

@@ -203,10 +203,15 @@
         <Ww>
           <count>10</count>
           <WinNumber>1</WinNumber>
-          <ItemText>count_main,0x0A</ItemText>
+          <ItemText>d,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>11</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>count_main,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>12</count>
           <WinNumber>1</WinNumber>
           <ItemText>count_rtu,0x0A</ItemText>
         </Ww>

@@ -12,7 +12,6 @@ void Send_Data_Terminal(UART_BUFFER *sUart2, void *data);
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi);
 void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
 
-uint32_t count_rtu=0;
 void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
 {
 	if(sUart2->sim_rx[0] == *addr_stm32l0xx)
@@ -436,7 +435,6 @@ void Send_Data_Terminal(UART_BUFFER *sUart2, void *data)
 
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi)
 {				
-	count_rtu++;
 	uint8_t i=0;
 	// address slave
 	if(addr_register <=0 && i<length)
