@@ -1554,7 +1554,7 @@ Image Symbol Table
     UART_Start_Receive_IT                    0x08003295   Thumb Code   188  stm32l0xx_hal_uart.o(i.UART_Start_Receive_IT)
     UART_WaitOnFlagUntilTimeout              0x0800335d   Thumb Code   138  stm32l0xx_hal_uart.o(i.UART_WaitOnFlagUntilTimeout)
     USART2_IRQHandler                        0x080033e9   Thumb Code    10  stm32l0xx_it.o(i.USART2_IRQHandler)
-    Uart2_Init                               0x080033f9   Thumb Code    62  uart_modbus_rtu.o(i.Uart2_Init)
+    Uart2_Init                               0x080033f9   Thumb Code    64  uart_modbus_rtu.o(i.Uart2_Init)
     __ARM_common_ll_muluu                    0x0800343d   Thumb Code    48  stm32l0xx_hal_rcc.o(i.__ARM_common_ll_muluu)
     __ARM_common_switch8                     0x0800346d   Thumb Code    26  stm32l0xx_hal_dma.o(i.__ARM_common_switch8)
     main                                     0x080034cd   Thumb Code   350  main.o(i.main)
@@ -1840,12 +1840,12 @@ Image component sizes
          2          0          0          0          0       1056   stm32l0xx_hal_uart_ex.o
         36          6          0          0          0       2711   stm32l0xx_it.o
          2          0         33          4          0       1223   system_stm32l0xx.o
-      2294         46          0         48         21      12373   uart_modbus_rtu.o
+      2294         44          0         48         21      12373   uart_modbus_rtu.o
        284         10          0          0          0       4347   user_modbus_rtu.o
        106          6          0          8          0       2655   user_uart.o
 
     ----------------------------------------------------------------------
-     12168        654        257        124       1820     395743   Object Totals
+     12168        652        257        124       1820     395743   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         24          0          0          3          3          0   (incl. Padding)
 
@@ -1905,9 +1905,9 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-     14224        698        324        124       1916     392663   Grand Totals
-     14224        698        324        124       1916     392663   ELF Image Totals
-     14224        698        324        124          0          0   ROM Totals
+     14224        696        324        124       1916     392663   Grand Totals
+     14224        696        324        124       1916     392663   ELF Image Totals
+     14224        696        324        124          0          0   ROM Totals
 
 ==============================================================================
 

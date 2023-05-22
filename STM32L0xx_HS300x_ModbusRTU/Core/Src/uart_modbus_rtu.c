@@ -525,7 +525,10 @@ void Uart2_Init(UART_BUFFER *sUart2, uint32_t baud_rate)
   sUart2->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
   if (HAL_UART_Init(sUart2->huart) != HAL_OK)
   {
-    while(1);
+     __disable_irq();
+		while (1)
+		{
+		}
   }
 }
 
