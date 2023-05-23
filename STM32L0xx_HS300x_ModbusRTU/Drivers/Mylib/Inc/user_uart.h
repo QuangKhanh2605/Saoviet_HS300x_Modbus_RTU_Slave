@@ -19,6 +19,7 @@ typedef struct
 int8_t Check_CountBuffer_Complete_Uart(UART_BUFFER *sUart);
 
 void Transmit_Data_Uart(UART_BUFFER *sUart, char* command);
+void Transmit_Data_Uart_Length(UART_BUFFER *sUart, char data[], uint16_t length);
 void Delete_Buffer(UART_BUFFER *sUart);
 
 

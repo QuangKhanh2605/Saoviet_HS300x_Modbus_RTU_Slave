@@ -12,6 +12,18 @@ void Send_Data_Terminal(UART_BUFFER *sUart2, void *data);
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi);
 void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
 
+
+/*
+	@brief  Kiem tra chuoi Uart nhan duoc va phan hoi theo chuan Modbus RTU
+	@param  sUart2 Struct uart
+	@param  addr_stm32l0xx dia chi slave
+	@param  baud_rate toc do baud rate
+	@param  tem nhiet do HS300x
+	@param  humi do am HS300x
+	@param  drop_tem hieu chuan nhiet do HS300x
+	@param  drop_humi hieu chuan do am HS300x
+	@retval None
+*/
 void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
 {
 	if(sUart2->sim_rx[0] == *addr_stm32l0xx)
@@ -107,6 +119,15 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 	}
 }
 
+/*
+	@brief  Thay doi dia chi, toc do baud rate va hieu chuan sensor tu cong terminal
+	@param  sUart2 Struct uart
+	@param  addr_stm32l0xx dia chi slave
+	@param  baud_rate toc do baud rate
+	@param  drop_tem hieu chuan nhiet do HS300x
+	@param  drop_humi hieu chuan do am HS300x
+	@retval None
+*/
 void Change_Baudrate_AddrSlave_Calib(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t *drop_tem, int16_t *drop_humi)
 {
 	int8_t receive_ctrl=0;
@@ -261,6 +282,15 @@ void Change_Baudrate_AddrSlave_Calib(UART_BUFFER *sUart2, uint8_t *addr_stm32l0x
 	}
 }
 
+/*
+	@brief  Thay doi dia chi, toc do baud rate va hieu chuan sensor tu cong terminal
+	@param  sUart2 Struct uart
+	@param  addr_stm32l0xx dia chi slave
+	@param  baud_rate toc do baud rate
+	@param  drop_tem hieu chuan nhiet do HS300x
+	@param  drop_humi hieu chuan do am HS300x
+	@retval None
+*/
 void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi)
 {
 	uint8_t i=0;
@@ -337,6 +367,10 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	Send_Data_Terminal(sUart2, success);
 }
 
+/*
+	@brief  Lay do dai chuoi thu duoc
+	@retval None
+*/
 void Get_Length_Variable(uint8_t *length, uint32_t variable)
 {
 	while(variable/10 >=1)
@@ -346,6 +380,20 @@ void Get_Length_Variable(uint8_t *length, uint32_t variable)
 	}
 }
 
+/*
+	@brief  Kiem tra chuoi thu duoc tu Uart
+	@param  sUart2 Struct uart
+	@return (0)  Khong dung cau truc
+	@ruturn (-1) Chuoi bi sai cau truc
+	@return (1)  Reset ID va baud rate ve gia tri mac dinh (ID=26, baud_rate=115200)
+	@return (2)  Chinh sua ID
+	@return (-2) Hoi thong tin cua Slave 
+	@return (3)  Chinh sua Baud_rate
+	@return (4)  Hieu chuan nhiet do (tang) 
+	@return (-4) Hieu chuan nhiet do (giam)
+	@return (5)  Hieu chuan do am (tang)
+	@return (-5) Hieu chuan do am (giam)
+*/
 int8_t Terminal_Receive(UART_BUFFER *sUart2)
 {
 	uint8_t i=0;
@@ -424,6 +472,12 @@ int8_t Terminal_Receive(UART_BUFFER *sUart2)
 	return 0;
 }
 
+/*
+	@brief  Gui du lieu den terminal
+	@param  sUart2 Struct uart can lam viec
+	@param  data du lieu muon gui len server
+	@retval None 
+*/
 void Send_Data_Terminal(UART_BUFFER *sUart2, void *data)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
@@ -433,6 +487,16 @@ void Send_Data_Terminal(UART_BUFFER *sUart2, void *data)
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);	
 }
 
+/*
+	@brief  Dong goi ban tin	
+	@param  data_frame khung ban tin de dong goi
+	@param  addr_stm32l0xx dia chi cua slave
+	@param  addr_register dia chi thanh ghi du lieu
+	@param  length do dai can dong goi
+	@param  baud_rate toc do baud rate
+	@param  tem nhiet do HS300x
+	@param  humi do am HS300x
+*/
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi)
 {				
 	uint8_t i=0;
@@ -511,6 +575,12 @@ void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_r
 	}
 }
 
+/**
+  @brief  Khoi tao Uart2
+  @param  sUart2 Struct uart muon lam viec
+	@param  baud_rate toc do baud rate
+  @retval None
+  */
 void Uart2_Init(UART_BUFFER *sUart2, uint32_t baud_rate)
 {
   sUart2->huart->Instance = USART2;
@@ -532,6 +602,12 @@ void Uart2_Init(UART_BUFFER *sUart2, uint32_t baud_rate)
   }
 }
 
+/*
+	@brief  Ghi du lieu vao Flash
+	@param  Check sau kiem tra xem du lieu da duoc nap chua
+	@param  data1, data2, data3, data4 du lieu muon ghi vao flash
+	@retval None
+*/
 void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2, uint32_t data3, uint32_t data4)
 {
   HAL_FLASH_Unlock();
@@ -549,6 +625,11 @@ void FLASH_WritePage(uint32_t check, uint32_t data1, uint32_t data2, uint32_t da
   HAL_FLASH_Lock();
 }
 
+/*
+	@brief  Doc byte tu Flash
+	@param  addr dia chi byte muon doc trong flash
+	@return du lieu tai dia chi muon doc
+*/
 uint32_t FLASH_ReadData32(uint32_t addr)
 {
 	uint32_t data = *(__IO uint32_t *)(addr);
