@@ -12,7 +12,6 @@ void Send_Data_Terminal(UART_BUFFER *sUart2, void *data);
 void Packing_Frame(uint8_t data_frame[], uint8_t addr_stm32l0xx, uint16_t addr_register, uint16_t length, uint32_t baud_rate, int16_t Tem, int16_t Humi);
 void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_rate, int16_t drop_tem, int16_t drop_humi);
 
-
 /*
 	@brief  Kiem tra chuoi Uart nhan duoc va phan hoi theo chuan Modbus RTU
 	@param  sUart2 Struct uart
@@ -114,6 +113,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 			Response_Error(&sFrame, *addr_stm32l0xx, (uint16_t) (0x80 + FunCode), ERROR_CODE_CHECK_CRC);
 		}
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+		HAL_Delay(10);
 		HAL_UART_Transmit(sUart2->huart, sFrame.Data_a8, sFrame.Length_u16, 1000);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 	}
