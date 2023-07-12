@@ -67,7 +67,7 @@ uint32_t baud_rate      = 115200;
 uint8_t  addr_stm32l0xx = 26;
 
 uint8_t check_complete_read_sensor=0;
-
+uint32_t gettick_reset=0;
 //uint16_t addr_baud_rate        = 0x01;
 
 //uint16_t addr_tem              = 0x02;
@@ -145,7 +145,10 @@ int main(void)
 	Uart2_Init(&sUart2, baud_rate);
 	HAL_UART_Receive_IT(sUart2.huart,&sUart2.buffer,1);
   /* USER CODE END 2 */
-
+//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+//	HAL_Delay(10);
+//	HAL_UART_Transmit(sUart2.huart, (uint8_t*)"Ready", 5, 1000);
+//	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
@@ -175,10 +178,18 @@ int main(void)
 			if(Check_CountBuffer_Complete_Uart(&sUart2) == 1)
 			{
 				Change_Baudrate_AddrSlave_Calib(&sUart2, &addr_stm32l0xx, &baud_rate, &drop_tem, &drop_humi);
-				ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi);
+				if(ModbusRTU_Slave(&sUart2, &addr_stm32l0xx, &baud_rate, tem, humi, drop_tem, drop_humi) == 1)
+				{
+					gettick_reset = HAL_GetTick();
+				}
 				Delete_Buffer(&sUart2);
 			}
 		}
+		if(HAL_GetTick() - gettick_reset > 60*60000)
+		{
+			gettick_reset = HAL_GetTick();
+			NVIC_SystemReset();
+		}		
 		HAL_IWDG_Refresh(&hiwdg);
   }
   /* USER CODE END 3 */

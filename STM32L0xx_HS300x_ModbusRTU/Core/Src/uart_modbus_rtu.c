@@ -23,8 +23,9 @@ void AT_Command_IF(UART_BUFFER *sUart2, uint8_t addr_stm32l0xx, uint32_t baud_ra
 	@param  drop_humi hieu chuan do am HS300x
 	@retval None
 */
-void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
+uint8_t ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *baud_rate, int16_t tem, int16_t humi, int16_t drop_tem, int16_t drop_humi)
 {
+	uint8_t answer=0;
 	if(sUart2->sim_rx[0] == *addr_stm32l0xx)
 	{
 		uint8_t frame[25]={0}; 
@@ -35,6 +36,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 		uint8_t FunCode = sUart2->sim_rx[1];
 		if(CRC_check == CRC_rx)
 		{
+			answer=1;
 			uint16_t addr_data = sUart2->sim_rx[2] << 8 | sUart2->sim_rx[3];
 			uint8_t data_frame[16]={0};
 			if(FunCode == 0x03)
@@ -117,6 +119,7 @@ void ModbusRTU_Slave(UART_BUFFER *sUart2, uint8_t *addr_stm32l0xx, uint32_t *bau
 		HAL_UART_Transmit(sUart2->huart, sFrame.Data_a8, sFrame.Length_u16, 1000);
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
 	}
+	return answer;
 }
 
 /*
